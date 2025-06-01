@@ -20,6 +20,8 @@
     // **เก็บข้อมูลการเลือกวันของแต่ละคน**
     let userSelections = [];
 
+    export let isLoading = false; // ใช้สำหรับแสดงสถานะการโหลดข้อมูล
+
     // Function to add or update user selections
     export function updateUserData(data) {
         if (Array.isArray(data)) {
@@ -195,7 +197,7 @@
 <div class="container mx-auto p-4 font-sans">
     <!-- ส่วนหัวปฏิทิน -->
     <div class="flex justify-between items-center mb-6">
-        <div class="text-2xl font-semibold">ปฏิทินสำหรับเดือน {thaiMonths[currentMonth]} {currentYear}</div>
+        <div class="text-2xl font-semibold">เดือน {thaiMonths[currentMonth]} {currentYear}</div>
 
         <div class="flex space-x-2">
             <button
@@ -241,31 +243,40 @@
                 </tr>
             </thead>
             <tbody>
-                
-                {#each userSelections as user}
+                {#if isLoading}
                     <tr>
-                        <td class="border border-gray-300 p-2 font-medium whitespace-nowrap">{user.userName}</td>
-                        {#each Array(daysInMonth) as _, dayIndex}
-                            {@const day = dayIndex + 1}
-                            <td class="border border-gray-300 p-1 text-center 
-                            {isDateSelected(user, day) ? user.color : ''}
-                            {isDateInRange(user,day) ? `${user.color} bg-opacity-50` : ''}
-                            {isRangeStart(user,day) ? `${user.color}` : ''}
-                            {isRangeEnd(user,day) ? `${user.color}` : ''}
-                            ">
-                                {#if isDateSelected(user, day)}
-                                    <span class="w-full h-full flex items-center justify-center">✓</span>
-                                {/if}
-                            </td>
-                        {/each}
+                        <td colspan="{daysInMonth + 1}" class="text-center p-4">กำลังโหลดข้อมูล...</td>
                     </tr>
-                {/each}
+                {:else if userSelections.length < 1 || userSelections == undefined}
+                    <tr>
+                        <td colspan="{daysInMonth + 1}" class="text-center p-4">ไม่พบข้อมูลการเลือกวัน</td>
+                    </tr>
+                {/if}
+
+                {#if !isLoading}
+                    {#each userSelections as user}
+                        <tr>
+                            <td class="border border-gray-300 p-2 font-medium whitespace-nowrap">{user.userName}</td>
+                            {#each Array(daysInMonth) as _, dayIndex}
+                                {@const day = dayIndex + 1}
+                                <td class="border border-gray-300 p-1 text-center 
+                                {isDateSelected(user, day) ? user.color : ''}
+                                {isDateInRange(user,day) ? `${user.color} bg-opacity-50` : ''}
+                                {isRangeStart(user,day) ? `${user.color}` : ''}
+                                {isRangeEnd(user,day) ? `${user.color}` : ''}
+                                ">
+                                    {#if isDateSelected(user, day)}
+                                        <span class="w-full h-full flex items-center justify-center">✓</span>
+                                    {/if}
+                                </td>
+                            {/each}
+                        </tr>
+                    {/each}
+                {/if}
+                
             </tbody>
         </table>
 
-        {#if userSelections.length < 1 || userSelections == undefined}
-            <center><p class="p-5">ไม่พบข้อมูล</p></center>
-        {/if}
     </div>
 
 </div>

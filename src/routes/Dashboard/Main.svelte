@@ -8,7 +8,6 @@
 
   let projectStats = {
     total: 0,
-    pendingApproval: 0, // New stat
   };
   let userCount = 0;
   // let openFormsCount = 0; // Removed as form_name is fetched from API
@@ -25,20 +24,6 @@
       const projectApproveCol = collection(db, 'project-approve');
       const projectSnapshot = await getCountFromServer(projectApproveCol);
       projectStats.total = projectSnapshot.data().count;
-
-      // Get projects awaiting approval
-      // **สำคัญ:** ปรับ query นี้ให้ตรงกับโครงสร้างข้อมูลของคุณ
-      // ตัวอย่าง: หากคุณมี field ชื่อ 'adminApprovalStatus' ที่มีค่าเป็น 'pending' สำหรับโครงงานที่รออนุมัติ
-
-      /*
-      const pendingProjectsQuery = query(projectApproveCol, where('adminApprovalStatus', '==', 'pending'));
-      try {
-        const pendingSnapshot = await getCountFromServer(pendingProjectsQuery);
-        projectStats.pendingApproval = pendingSnapshot.data().count;
-      } catch (e) {
-        console.warn("ไม่สามารถดึงข้อมูลโครงงานรออนุมัติได้ กรุณาตรวจสอบ field 'adminApprovalStatus' และ index ใน Firestore หรือปรับ query:", e);
-        projectStats.pendingApproval = 0; // หาก query ไม่สำเร็จ ให้แสดงเป็น 0
-      }*/
 
 
       // Get user stats
@@ -114,7 +99,7 @@
   {#if isLoading}
     <Loading />
   {:else}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> 
       <!-- Total Projects Card -->
       <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
         <div class="flex items-center justify-between mb-3">
@@ -125,18 +110,6 @@
         </div>
         <p class="text-4xl font-bold text-blue-600">{projectStats.total}</p>
         <p class="text-sm text-gray-500 mt-1">จำนวนโครงงานในระบบ</p>
-      </div>
-
-      <!-- Projects Awaiting Approval Card -->
-      <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold text-gray-700">รอการอนุมัติ</h2>
-           <span class="p-2 bg-yellow-100 text-yellow-600 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </span>
-        </div>
-        <p class="text-4xl font-bold text-yellow-600">{projectStats.pendingApproval}</p>
-        <p class="text-sm text-gray-500 mt-1">โครงงานที่ต้องตรวจสอบ <span class="text-xs">(ปรับ query ตามข้อมูลจริง)</span></p>
       </div>
 
       <!-- User Stats Card -->

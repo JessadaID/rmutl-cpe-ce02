@@ -474,12 +474,3 @@
 
   </form>
 </div>
-
-<!-- Removed the custom SVG shape divider for a cleaner look -->
-<!-- If you want it back, uncomment the style block and the div -->
-<!--
-<div class="custom-shape-divider-bottom-1737391877" transition:fade={{ duration: 500 }}>
-  <svg ...> ... </svg>
-</div>
-<style> ... </style>
--->

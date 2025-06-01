@@ -1,7 +1,7 @@
 <script>
     import { page } from '$app/stores'; // Import page store to get params
     import { goto } from '$app/navigation';
-    import { onMount, tick } from 'svelte'; // Import tick
+    import { onMount } from 'svelte'; // Import tick
     import { getCookie } from "cookies-next";
     import { db } from '$lib/firebase'; // Import Firestore instance
     import {
@@ -9,14 +9,12 @@
         getDoc,
         setDoc,
         Timestamp,
-        collection,
-        query,
-        where,
-        getDocs
     } from 'firebase/firestore';
     import Calendar from "./Calendar.svelte";
-    import ShowCalendar from './show-Calendar.svelte';
     import { successToast, dangerToast, warningToast } from '$lib/customtoast';
+    import { triggerAvailabilityUpdate } from '$lib/stores/availabilityStore'; // Import the trigger
+    import { convertToDate } from '$lib/convertToDate'; // Import utility function to handle date conversion
+
 
     let userRole = '';
     let email = '';
@@ -28,8 +26,6 @@
     let savedSelections = []; // This will be loaded from Firestore and bound to Calendar
     let selectionMode = 'single';
     let isLoading = true; // Start in loading state
-    let showCalendar; // Reference to the ShowCalendar component
-    let allUsersAvailability = []; // To store data for ShowCalendar
     let projectAvailabilityData = null; // To store the entire project document data
 
     
@@ -59,25 +55,23 @@
 
         await loadProjectAvailability(); // Load the single document for the project
         processUserData(); // Extract current user's data
-        processAllUsersData(); // Extract data for ShowCalendar
 
         isLoading = false;
-        await tick(); // Ensure ShowCalendar component is rendered
-        updateShowCalendarComponent(); // Update ShowCalendar after data is loaded
     });
 
     // --- Load current user's data ---
     async function loadProjectAvailability() {
-        const projectDocRef = doc(db, APPOINTMENTS_COLLECTION, projectId);
 
         try {
-            const docSnap = await getDoc(projectDocRef);
-            if (docSnap.exists()) {
-                projectAvailabilityData = docSnap.data();
-            } else {
-                console.log("No availability data found for this project yet.");
-                projectAvailabilityData = {}; // Initialize as empty object if document doesn't exist
-            }
+            const respond = await fetch(`/api/project-availability/${projectId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await respond.json();
+            projectAvailabilityData = data.projectData;
+            
         } catch (error) {
             console.error("Error loading project availability:", error);
             dangerToast("เกิดข้อผิดพลาดในการโหลดข้อมูลโปรเจกต์");
@@ -86,45 +80,23 @@
     }
 
     // --- Process data for the current user ---
-    function processUserData() {
-        const currentUserData = projectAvailabilityData?.usersAvailability?.[email];
-        if (currentUserData && currentUserData.savedSelections) {
-            // Convert Firestore Timestamps back to JS Dates
-            savedSelections = (currentUserData.savedSelections || []).map(sel => ({
-                ...sel,
-                // Ensure timestamps exist before calling toDate()
-                date: sel.date ? sel.date.toDate() : null,
-                start: sel.start ? sel.start.toDate() : null,
-                end: sel.end ? sel.end.toDate() : null,
-            })).filter(sel => sel.id); // Ensure selections have an ID
-        } else {
-            console.log("No previous availability data found for this user in this project.");
-            savedSelections = [];
-        }
+  function processUserData() {
+    const currentUserData = projectAvailabilityData?.usersAvailability?.[email];
+    if (currentUserData && currentUserData.savedSelections) {
+        // Convert Firestore timestamps and string timestamps to JS Dates
+        savedSelections = (currentUserData.savedSelections || []).map(sel => ({
+            ...sel,
+            // Handle different timestamp formats
+            date: convertToDate(sel.date),
+            start: convertToDate(sel.start),
+            end: convertToDate(sel.end),
+        })).filter(sel => sel.id); // Ensure selections have an ID
+    } else {
+        console.log("No previous availability data found for this user in this project.");
+        savedSelections = [];
     }
+}
 
-    // --- Process data for all users related to the project ---
-    function processAllUsersData() {
-        const usersDataMap = projectAvailabilityData?.usersAvailability;
-        if (usersDataMap) {
-            allUsersAvailability = Object.entries(usersDataMap).map(([userEmail, userData]) => {
-                return {
-                    email: userEmail,
-                    name: userData.name,
-                    // Convert Timestamps to JS Dates for ShowCalendar
-                    savedSelections: (userData.savedSelections || []).map(sel => ({
-                        ...sel,
-                        date: sel.date ? sel.date.toDate() : null,
-                        start: sel.start ? sel.start.toDate() : null,
-                        end: sel.end ? sel.end.toDate() : null,
-                    })).filter(sel => sel.id) // Ensure selections have an ID
-                };
-            });
-        } else {
-            console.log("No user availability data found in the project document.");
-            allUsersAvailability = [];
-        }
-    }
 
     // --- Load data for all users related to the project (OLD - replaced by processAllUsersData) ---
     // async function loadAllUsersAvailability() { ... } // Keep commented or remove
@@ -163,8 +135,9 @@
             // Refresh ALL data from the single document after successful save
             await loadProjectAvailability();
             processUserData(); // Update current user's view
-            processAllUsersData(); // Update data for the combined calendar
-            updateShowCalendarComponent(); // Refresh the combined calendar display
+
+            // Signal that availability data has changed for other components (like the layout)
+            triggerAvailabilityUpdate();
 
         } catch (error) {
             console.error("Error saving availability:", error);
@@ -172,14 +145,7 @@
         }
     }
 
-    // --- Function to update the ShowCalendar component ---
-    function updateShowCalendarComponent() {
-        if (showCalendar && typeof showCalendar.updateUserData === 'function') {
-            showCalendar.updateUserData(allUsersAvailability);
-        } else if (!isLoading) { // Avoid warning during initial load
-            console.warn("ShowCalendar component reference not available yet or updateUserData is not a function.");
-        }
-    }
+  
 
 </script>
 
@@ -196,15 +162,11 @@
 {:else}
     <!-- Only render content when not loading and authorized -->
     {#if userRole === 'subject_teacher' || userRole === 'admin' || userRole === 'teacher'}
-        <div class="w-full min-h-screen p-4 space-y-6">
-            <div class="flex justify-between items-center">
-                <h1 class="text-xl font-bold">กำหนดวันที่อาจารย์ว่าง (สำหรับโครงงาน ID: {projectId})</h1>
-                <!-- Add other header elements if needed -->
-            </div>
+        <div class="w-full min-h-screen mt-4 space-y-6">
 
             <!-- Calendar for Input -->
             <div class="bg-white p-4 rounded-lg shadow">
-                 <h2 class="text-lg font-semibold mb-3">เลือก/แก้ไข วันที่ว่างของคุณ ({email})</h2>
+                 <h2 class="text-lg font-semibold mb-3">เลือก/แก้ไข วันที่ว่างของคุณ </h2>
                  <Calendar
                     bind:selectionMode
                     bind:selectedDates
@@ -212,15 +174,11 @@
                     bind:savedSelections
                     on:save={handleSave}
                     on:delete={handleSave} 
+                    on:update={handleSave}
                  />
             </div>
 
 
-            <!-- Component to Show Combined Calendars -->
-             <div class="bg-white p-4 rounded-lg shadow">
-                 <h2 class="text-lg font-semibold mb-3">ปฏิทินรวม</h2>
-                <ShowCalendar bind:this={showCalendar} />
-             </div>
 
         </div>
     {:else}

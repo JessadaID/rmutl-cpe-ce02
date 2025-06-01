@@ -1,18 +1,39 @@
 import { json } from "@sveltejs/kit";
-import { db } from "$lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { adminDb } from "$lib/server/firebase";
+// API GET: ดึงข้อมูลผู้ใช้
 
-// API GET: ดึงข้อมูลผู้ใช้ที่ล็อกอิน
-export async function GET({ locals }) {
-  const uid = locals.user?.uid;
-  if (!uid) return json({ error: "Unauthorized" }, { status: 401 });
+export async function GET({ url }) {
+  try {
+    const roleQueryParam = url.searchParams.get('role');
+    console.log("Received role query param:", roleQueryParam);
 
-  const userRef = doc(db, "users", uid);
-  const userSnap = await getDoc(userRef);
+    let q = adminDb.collection('users');
+    let rolesToFilter = [];
 
-  if (!userSnap.exists()) {
-    return json({ error: "User not found" }, { status: 404 });
+    if (roleQueryParam) {
+      if (roleQueryParam.toLowerCase() === 'teachersubject_teacher') {
+        rolesToFilter = ['teacher', 'subject_teacher'];
+      } else {
+        // If the param is not the special 'teachersubject_teacher' string,
+        // treat it as a single role to filter by.
+        rolesToFilter = [roleQueryParam];
+      }
+    }
+
+    if (rolesToFilter.length > 0) {
+      q = q.where('role', 'in', rolesToFilter).select('email', 'name', 'role');
+      console.log("Applying Firestore filter for roles:", rolesToFilter);
+    } else {
+      console.log("No role filter applied, fetching all users.");
+    }
+
+    const querySnapshot = await q.get();
+    const users = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    return json({ data: users }, { status: 200 });
+  } catch (err) {
+    console.error("Error in GET /api/user:", err);
+    const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+    return json({ error: errorMessage }, { status: 500 });
   }
-
-  return json({ user: userSnap.data() });
 }

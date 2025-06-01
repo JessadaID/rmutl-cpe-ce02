@@ -5,10 +5,8 @@
       getDocs,
       doc,
       updateDoc,
-      addDoc,
       serverTimestamp,
-      orderBy,
-      query,
+   
       writeBatch,
       deleteDoc,
     } from "firebase/firestore";
@@ -288,6 +286,13 @@
         </svg>
         สร้างเทอมใหม่
       </button>
+      <a
+      href="OpenForm/manage_teacher"
+        disabled={loading}
+        class="bg-amber-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+      จัดการรายชื่ออาจารย์
+      </a>
     </div>
   
     {#if loading}

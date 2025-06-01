@@ -1,5 +1,5 @@
 import { setCookie, deleteCookie,getCookie } from 'cookies-next';
-import { getAuth, signOut} from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { auth } from "$lib/firebase"; // นำเข้า Firebase Auth ที่ตั้งค่าไว้
 import { goto } from '$app/navigation';
 
@@ -48,26 +48,15 @@ export function clearLoginCookies() {
     //console.log('Cookies have been clear');
 }
 
-/**
- * ตรวจสอบสถานะการล็อกอิน
- * @returns {boolean} - คืนค่า true ถ้าผู้ใช้ล็อกอิน, false ถ้าไม่ได้ล็อกอิน
- */
-
-export async function isUserLoggedIn() {
-  const auth = getAuth();
-  await auth.authStateReady; // รอ Firebase โหลดข้อมูล
-  return !!auth.currentUser; // true = ล็อกอิน, false = ไม่ได้ล็อกอิน
-}
-
 export function checkAuthStatus() {
+    // Use the imported 'auth' instance from $lib/firebase
     const email = getCookie("email");
     const role = getCookie("role");
 
     //console.log("Checking cookies:", { email, role });
 
     if (!email || !role) {
-      console.warn("Missing cookies. Logging out.");
-      //console.log(email, role);
+      // console.warn("Missing auth cookies or user not authenticated. Logging out.");
       logout();
       return false;
     }

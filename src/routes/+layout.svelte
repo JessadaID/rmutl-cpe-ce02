@@ -1,7 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { auth, db } from '$lib/firebase'; // Firebase Auth
-	import { onAuthStateChanged } from 'firebase/auth';
+	import { getAuth, onAuthStateChanged } from 'firebase/auth';
 	import { doc, getDoc } from 'firebase/firestore';
 	import { checkAuthStatus, logout } from '$lib/auth';
 	import { SvelteToast } from '@zerodevx/svelte-toast';
@@ -10,7 +10,11 @@
 	import { requestNotificationPermissionAndSaveToken } from '$lib/fcm'; // Import the FCM function
 	import { slide } from 'svelte/transition'; // For smoother menu transitions
 	import { quintOut } from 'svelte/easing'; // Easing function for transitions
-	
+	import { navigating } from '$app/stores';
+	import { startProgress, doneProgress } from '$lib/progress';
+	import { onDestroy } from 'svelte';
+
+
 	let isLoggedIn = false;
 	let currentUser = null;
 	let isMenuOpen = false;
@@ -18,6 +22,18 @@
 	let userName = '';
 	let menuItems = [];
 	let role = null;
+
+	let unsubscribe = navigating.subscribe(($navigating) => {
+		if ($navigating) {
+			startProgress();
+		} else {
+			doneProgress();
+		}
+	});
+
+	onDestroy(() => {
+		unsubscribe();
+	});
 
 	// --- Role-Based Menu Items ---
 	// (Kept the same logic, but added comments for clarity)
@@ -90,11 +106,11 @@
 
 	// --- Authentication and Data Fetching ---
 	onMount(() => {
-	menuItems = getMenuItems();
+		menuItems = getMenuItems();
 
-	const unsubscribe = onAuthStateChanged(auth, handleAuthStateChange);
-	return () => unsubscribe();
-});
+		const unsubscribe = onAuthStateChanged(auth, handleAuthStateChange);
+		return () => unsubscribe();
+	});
 
 	async function handleAuthStateChange(user) {
 		if (user && checkAuthStatus()) {

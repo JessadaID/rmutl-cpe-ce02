@@ -7,7 +7,7 @@
     const { menuItems } = data;
   </script>
   
-  <div class="flex h-screen bg-gray-100">
+  <div class="flex h-[calc(100vh-4rem)]  bg-gray-100">
     <!-- Sidebar สามารถส่ง menuItems เข้าไปได้ -->
     <Sidebar {menuItems} {title}/>
     

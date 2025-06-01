@@ -19,12 +19,17 @@
     import { getCookie } from 'cookies-next';
     import Process from "./Process.svelte"; // Adjust the import path as necessary
     import { verifyJWT ,createJWT } from "$lib/jwt"; // Adjust the import path as necessary
+  import StudentSelect from './student_select.svelte';
   
     let userEmail = null; // Store user email from auth check
     let project = null;
+    let currentProject = null; // Current version of project
+    let projectVersions = []; // Array to store all versions
+    let selectedVersion = 'current'; // Track which version is selected
     let isNotFound = false;
     let role = ""; // Assuming role comes from auth check or another source
     let isLoading = true; // Start loading initially
+    let isLoadingVersions = false; // Loading state for versions
     let isDeleting = false; // Specific loading state for delete action
     let can_edit = false; // This should likely be determined based on role/email
     let can_edit_tasks = false; // Renamed for clarity (plural tasks)
@@ -36,11 +41,14 @@
     let selectedImage = null;
     let projectId = null;
     let showTask = false; // Control visibility of task section
-
+      
     // New state variables for clarity within the right panel
     let shouldShowProcessComponent = false;
     let canViewDirectorScores = false;
     let activeTaskView = ''; // 'process' or 'scores', determines which view is active in the right panel
+
+    let activeMainView = 'current'; // 'current' or 'previous_version'
+
 
     // Function to open image modal
     function openImageModal(image) {
@@ -61,20 +69,62 @@
         warningToast('กรุณาเข้าสู่ระบบก่อนดูรายละเอียดโครงงาน');
       }
     }
+    
+        // Function to load project versions
+   async function loadProjectVersions() {
+      if (!projectId) return;
 
-    async function goToprojectPage(term) {
-      if (checkAuthStatus()) {
+      isLoadingVersions = true;
+      try {
+        const versionsRef = collection(db, "project-approve", projectId, "project_versions");
+        const versionsSnapshot = await getDocs(versionsRef);
 
-				const payload = { term };
-				const token = await createJWT(payload);
-				goto(`../?token=${token}`); // Use relative path
-		
-      } else {
-        console.log('User is not authenticated, redirecting to login.');
-        warningToast('กรุณาเข้าสู่ระบบก่อนดูรายละเอียดโครงงาน');
+        projectVersions = versionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        //console.log('Project Versions:', projectVersions);
+
+        //console.log(projectVersions);
+      } catch (error) {
+        //console.error("Error loading project versions:", error);
+        warningToast("เกิดข้อผิดพลาดในการโหลดประวัติเวอร์ชัน: " + error.message);
+      } finally {
+        isLoadingVersions = false;
       }
     }
-    
+
+
+    // Function to select a version to display
+    function selectVersion(versionId) {
+      activeMainView = versionId;
+      selectedVersion = versionId;
+      
+      if (versionId === 'current') {
+        project = currentProject;
+      } else {
+        const selectedVersionData = projectVersions[0];
+        if (selectedVersionData) {
+          project = selectedVersionData;
+        }
+      }
+      // Update task-related data when version changes
+      updateTaskData();
+    }
+
+    // Function to update task-related data when version changes
+    function updateTaskData() {
+      if (shouldShowProcessComponent && project) {
+        // Initialize status and comment arrays based on selected version
+        status = termTasks.map((_, index) => project.Tasks?.[index]?.status || "");
+        comment = termTasks.map((_, index) => project.Tasks?.[index]?.comment || "");
+      } else {
+        status = [];
+        comment = [];
+      }
+    }
+
+
     onMount(async () => {
       isLoading = true;
       const token = $page.url.searchParams.get('token');
@@ -115,7 +165,7 @@
   
         if (projectSnap.exists()) {
           project = projectSnap.data();
-  
+          currentProject = projectSnap.data();
           can_edit = role === 'admin' || (userEmail && project.email === userEmail);
   
           // Determine if the user can edit tasks (admin or advisor for this project)
@@ -157,6 +207,8 @@
             status = [];
             comment = [];
           }
+
+          await loadProjectVersions();
 
           // Set the default active view for the right panel
           if (shouldShowProcessComponent) {
@@ -260,14 +312,44 @@
     </div>
   {:else if project}
     <div class="container mx-auto px-4 py-8 bg-gray-100">
+      
      
+
       <!-- Main Content Grid -->
       <div class="md:flex md:gap-8">
   
         <!-- Left Column: Project Details -->
           <div class="{showTask ? 'md:w-7/12 lg:w-8/12' : 'md:w-10/12 lg:w-8/12 mx-auto'} mb-8 md:mb-0">
-            <div class="bg-white shadow-lg rounded-lg p-6 sm:p-8 h-full"> <!-- Consider adding h-full if content height varies -->
+             <!-- Main Navigation Tabs -->
+     
+            <div class="px-6 py-0  bg-white">
+              <div class="flex border-b border-gray-200">
+                <button
+                  on:click={() => selectVersion("current")}
 
+                  class="py-4 px-6 -mb-px font-medium text-sm focus:outline-none whitespace-nowrap {activeMainView === 'current' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-indigo-500 border-b-2 border-transparent hover:border-gray-300'}"
+                >
+                  <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  เวอร์ชันปัจจุบัน
+                </button>
+                <button
+                  on:click={() => selectVersion("previous_version")}
+                  class="py-4 px-6 -mb-px font-medium text-sm focus:outline-none whitespace-nowrap {activeMainView === 'previous_version' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-indigo-500 border-b-2 border-transparent hover:border-gray-300'} {projectVersions.length === 0 ? 'cursor-not-allowed opacity-50' : ''}"
+                  disabled={projectVersions.length === 0}
+                >
+                  <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  เวอร์ชันก่อนหน้า
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white shadow-lg rounded-b-lg p-6 sm:p-8 h-full"> <!-- Consider adding h-full if content height varies -->
+
+              
               <!-- Project Title -->
               <div class="mb-6 pb-4 border-b border-gray-200">
                 <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-1">{project.project_name_th}</h1>
@@ -376,7 +458,7 @@
                               {#each project.Operation_Schedule.monthLabels as month,i}
                               <td class="border-b border-l border-gray-300 p-0 text-center h-full">
                                   <div class="h-full w-full py-3" style:background-color={activity.months[i] ? activity.color : 'transparent'}>&nbsp;</div>
-                              </td>
+                                </td>
                               {/each}
                           </tr>
                           {/each}
@@ -464,6 +546,12 @@
                         สถานะและการดำเนินการ
                       </button>
                       <button
+                        on:click={() => activeTaskView = 'exam'}
+                        class="py-3 px-4 -mb-px font-medium text-sm focus:outline-none whitespace-nowrap {activeTaskView === 'exam' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-indigo-500 border-b-2 border-transparent hover:border-gray-300'}"
+                      >
+                        เลือกวัน-เวลาสอบ
+                      </button>
+                      <button
                         on:click={() => activeTaskView = 'scores'}
                         class="py-3 px-4 -mb-px font-medium text-sm focus:outline-none whitespace-nowrap {activeTaskView === 'scores' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-indigo-500 border-b-2 border-transparent hover:border-gray-300'}"
                       >
@@ -530,6 +618,8 @@
                       {:else}
                           <p class="text-sm text-gray-500">ยังไม่มีข้อมูลกรรมการสำหรับโครงงานนี้</p>
                       {/if}
+                    {:else if activeTaskView === 'exam'}
+                    <StudentSelect projectId={projectId}/>
                     {/if}
                   </div>
                 </div>

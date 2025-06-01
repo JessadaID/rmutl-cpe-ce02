@@ -4,6 +4,8 @@
     doc,
     getDoc,
     updateDoc,
+    deleteField ,
+    setDoc,
   } from "firebase/firestore";
   import { db } from "$lib/firebase";
   import { goToProject_Details } from "$lib/NavigateWithToken";
@@ -193,7 +195,7 @@
         selected: project.selected,
       }));
 
-      console.log("Projects to update:", updatedProjects);
+      //console.log("Projects to update:", updatedProjects);
       
       // Process each project update as a separate operation
       const updatePromises = updatedProjects.map(async (project) => {
@@ -201,46 +203,71 @@
         const projectDoc = await getDoc(projectRef);
 
         if (!projectDoc.exists()) {
-          throw new Error(`Project with ID ${project.id} not found`);
-        }
-
-        const currentData = projectDoc.data();
-        const currentDirectors = currentData.directors || [];
-        
-        console.log(`Project ${project.id} - Current directors:`, currentDirectors);
-
-        let updatedDirectors = [...currentDirectors]; // Create a copy to modify
-
-        // Find if user is already a director
-        const existingDirectorIndex = updatedDirectors.findIndex(
-          director => director.email === userEmail
-        );
-
-        if (project.selected && existingDirectorIndex === -1) {
-          // Add teacher if selected and not already a director
-          updatedDirectors.push({
-            email: userEmail,
-            name: userName
-          });
-          console.log(`Adding ${userEmail} to project ${project.id}`);
-        } else if (!project.selected && existingDirectorIndex !== -1) {
-          // Remove teacher if deselected and currently a director
-          updatedDirectors.splice(existingDirectorIndex, 1);
-          console.log(`Removing ${userEmail} from project ${project.id}`);
-        }
-
-        console.log(`Project ${project.id} - Updated directors:`, updatedDirectors);
-        
-        // Only update if there were changes to the directors
-        if (
-          JSON.stringify(updatedDirectors) !== JSON.stringify(currentDirectors)
-        ) {
-          console.log(`Updating project ${project.id} in database`);
-          await updateDoc(projectRef, {
-            directors: updatedDirectors,
-          });
+          console.warn(`Project with ID ${project.id} not found in project-approve. Skipping director update.`);
+          // ไม่ throw error ทันที แต่อาจจะ log หรือจัดการตามความเหมาะสม
         } else {
-          console.log(`No changes for project ${project.id}`);
+          const currentData = projectDoc.data();
+          const currentDirectors = currentData.directors || [];
+          
+          //console.log(`Project ${project.id} - Current directors:`, currentDirectors);
+
+          let updatedDirectors = [...currentDirectors]; // Create a copy to modify
+
+          // Find if user is already a director
+          const existingDirectorIndex = updatedDirectors.findIndex(
+            director => director.email === userEmail
+          );
+
+          if (project.selected && existingDirectorIndex === -1) {
+            // Add teacher if selected and not already a director
+            updatedDirectors.push({
+              email: userEmail,
+              name: userName
+            });
+            //console.log(`Adding ${userEmail} to project ${project.id}`);
+          } else if (!project.selected && existingDirectorIndex !== -1) {
+            // Remove teacher if deselected and currently a director
+            updatedDirectors.splice(existingDirectorIndex, 1);
+            //console.log(`Removing ${userEmail} from project ${project.id}`);
+          }
+
+          if (
+            JSON.stringify(updatedDirectors) !== JSON.stringify(currentDirectors)
+          ) {
+            //console.log(`Updating project ${project.id} in project-approve database`);
+            await updateDoc(projectRef, {
+              directors: updatedDirectors,
+            });
+          } else {
+            //console.log(`No changes for project ${project.id} in project-approve`);
+          }
+        }
+
+        // --- อัปเดต project-availability collection ---
+        const availabilityDocRef = doc(db, "project-availability", project.id);
+        if (project.selected) {
+          // ถ้าอาจารย์ถูกเลือกเป็นกรรมการ ให้เพิ่ม/อัปเดตข้อมูลใน project-availability
+          await setDoc(availabilityDocRef, {
+            usersAvailability: {
+              [userEmail]: { name: userName }
+            }
+          }, { merge: true });
+          //console.log(`Ensured ${userEmail} is in project-availability for ${project.id}`);
+        } else {
+          // ถ้าอาจารย์ยกเลิกการเป็นกรรมการ ให้ลบข้อมูลออกจาก project-availability
+          try {
+            const availabilityDocSnap = await getDoc(availabilityDocRef);
+            if (availabilityDocSnap.exists()) { // ตรวจสอบว่า document มีอยู่จริงก่อนที่จะพยายามลบ field
+              await updateDoc(availabilityDocRef, {
+                [`usersAvailability.${userEmail}`]: deleteField()
+              });
+              //console.log(`Removed ${userEmail} from project-availability for ${project.id}`);
+            } else {
+              //console.log(`project-availability document for ${project.id} does not exist. No removal needed for ${userEmail}.`);
+            }
+          } catch (e) {
+             console.warn(`Could not update project-availability for ${project.id} to remove ${userEmail}. Error:`, e);
+          }
         }
       });
 

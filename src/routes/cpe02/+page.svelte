@@ -2,14 +2,19 @@
   export let data;
 
   import { goto } from "$app/navigation";
-  import { checkAuthStatus } from "$lib/auth";
-  import { warningToast } from "$lib/customtoast.js";
   import { createJWT } from "$lib/jwt.ts";
   import { fade } from 'svelte/transition'; // Import fade transition
-  
-  $: latestTerm = data.lastestTerm;
+  import { getAuth } from "firebase/auth";
+  import { warningToast } from "$lib/customtoast.js";
 
+
+  $: latestTerm = data.lastestTerm;
   async function navigateWithToken(term) {
+    const auth = getAuth();
+    if (!auth.currentUser) {
+      warningToast('กรุณาเข้าสู่ระบบเพื่อกรอกแบบฟอร์ม');
+      return;
+    }
 		try {
 			const payload = { term };
 			const token = await createJWT(payload);

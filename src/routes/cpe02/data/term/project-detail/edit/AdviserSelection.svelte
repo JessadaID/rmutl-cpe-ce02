@@ -1,13 +1,5 @@
 <script>
     export let project , adviserList, noAdviserYet = false;
-    let activeAdviserTab = 'approved'; // 'approved' or 'unapproved'
-    
-
-      // --------- Computed Properties ---------
-  $: approvedAdvisers = adviserList.filter(adv => adv.Approval);
-  $: unapprovedAdvisers = adviserList.filter(adv => !adv.Approval);
-
-  // --------- Adviser Handling Functions ---------
   
   /**
    * ตรวจสอบว่าอาจารย์ท่านนี้ถูกเลือกเป็นที่ปรึกษาหรือไม่
@@ -52,12 +44,6 @@
     }
   }
 
-  /**
-   * เปลี่ยนแท็บของรายการอาจารย์ที่ปรึกษา
-   */
-  function switchAdviserTab(tabName) {
-    activeAdviserTab = tabName;
-  }
 
 </script>
 
@@ -83,41 +69,18 @@
     <!-- Adviser Selection Area (Tabs and List) -->
     <div class:opacity-50={noAdviserYet} class:pointer-events-none={noAdviserYet} class="mt-2">
       <!-- Tab Navigation -->
-      <div class="border-b border-gray-200">
-        <nav class="-mb-px flex space-x-4" aria-label="Tabs">
-          <button
-            type="button"
-            on:click={() => switchAdviserTab('approved')}
-            disabled={noAdviserYet}
-            class={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
-              ${activeAdviserTab === 'approved' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            อาจารย์ที่อนุมัติแล้ว ({approvedAdvisers.length})
-          </button>
-          <button
-            type="button"
-            on:click={() => switchAdviserTab('unapproved')}
-            disabled={noAdviserYet}
-            class={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
-              ${activeAdviserTab === 'unapproved' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            อาจารย์ที่ยังไม่อนุมัติ ({unapprovedAdvisers.length})
-          </button>
-        </nav>
-      </div>
 
       <!-- Tab Content -->
       <div class="mt-1 max-h-60 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50 space-y-3">
-        {#if activeAdviserTab === 'approved'}
-          {#if approvedAdvisers.length === 0}
+          {#if adviserList.length === 0}
             <p class="text-gray-500 text-sm">{adviserList.length === 0 ? 'กำลังโหลดรายชื่ออาจารย์...' : 'ไม่มีอาจารย์ที่ได้รับการอนุมัติ'}</p>
           {:else}
-            {#each approvedAdvisers as adv (adv.id)}
+            {#each adviserList as adv (adv.id)}
               <div class="relative flex items-start">
                 <div class="flex h-5 items-center">
                   <input
                     type="checkbox"
-                    id={`${adv.id}-approved`}
+                    id={`${adv.id}`}
                     value={adv.email}
                     checked={isAdviserSelected(adv.email)}
                     on:change={(event) => handleAdviserChange(event, adv)}
@@ -126,39 +89,13 @@
                   />
                 </div>
                 <div class="ml-3 text-sm">
-                  <label for={`${adv.id}-approved`} class="font-medium text-gray-700 cursor-pointer">
+                  <label for={`${adv.id}`} class="font-medium text-gray-700 cursor-pointer">
                     {adv.label || adv.email}
                   </label>
                 </div>
               </div>
             {/each}
           {/if}
-        {:else if activeAdviserTab === 'unapproved'}
-          {#if unapprovedAdvisers.length === 0}
-            <p class="text-gray-500 text-sm">{adviserList.length === 0 ? 'กำลังโหลดรายชื่ออาจารย์...' : 'ไม่มีอาจารย์ที่ยังไม่ได้รับการอนุมัติ'}</p>
-          {:else}
-            {#each unapprovedAdvisers as adv (adv.id)}
-              <div class="relative flex items-start">
-                <div class="flex h-5 items-center">
-                  <input
-                    type="checkbox"
-                    id={`${adv.id}-unapproved`}
-                    value={adv.email}
-                    checked={isAdviserSelected(adv.email)}
-                    on:change={(event) => handleAdviserChange(event, adv)}
-                    disabled={noAdviserYet}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                </div>
-                <div class="ml-3 text-sm">
-                  <label for={`${adv.id}-unapproved`} class="font-medium text-gray-700 cursor-pointer">
-                    {adv.label || adv.email} <span class="italic text-gray-500">(ยังไม่ได้รับการอนุมัติ)</span>
-                  </label>
-                </div>
-              </div>
-            {/each}
-          {/if}
-        {/if}
       </div>
     </div>
      {#if project.adviser.length === 0 && !noAdviserYet}

@@ -21,7 +21,7 @@ export async function POST({ request }) {
       const userData = userDoc.data();
 
       if (userDoc.exists && userData?.fcmToken) {
-        tokens.push(userData.fcmToken);
+        tokens = [userData.fcmToken]; // Directly assign for a single user
       }
     } else {
       // ส่งหาทุกคน
@@ -31,7 +31,7 @@ export async function POST({ request }) {
         if (data.fcmToken) {
           tokens.push(data.fcmToken);
         }
-      }
+ }
     }
 
     if (tokens.length > 0) {

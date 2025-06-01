@@ -74,6 +74,17 @@
 	<div class="flex-grow overflow-y-auto overflow-x-hidden px-4 py-6">
 		<nav class="space-y-2">
 			{#each menuItems as item (item.id)}
+				{#if item.id == 'sprade_teacher'}
+					<div class="relative flex items-center justify-center my-4">
+						<div class="absolute inset-x-0 top-1/2 h-0.5 bg-gray-300 -translate-y-1/2"></div>
+						<span class="relative z-10 px-2 bg-white text-sm text-gray-500">ส่วนของอาจารย์</span>
+					</div>
+				{:else if item.id == "sprade_subject_teacher"}
+					<div class="relative flex items-center justify-center my-4">
+						<div class="absolute inset-x-0 top-1/2 h-0.5 bg-gray-300 -translate-y-1/2"></div>
+						<span class="relative z-10 px-2 bg-white text-sm text-gray-500">ส่วนของอาจารย์ประจำวิชา</span>
+					</div>
+				{:else}
 				{@const isActive = selectedItemId === item.id}
 				<button
 					class={`
@@ -118,6 +129,7 @@
 					<!-- Hover effect -->
 					<div class="absolute inset-0 bg-gradient-to-r from-transparent to-transparent group-hover:from-blue-50/50 group-hover:to-transparent rounded-xl transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
 				</button>
+				{/if}
 			{/each}
 		</nav>
 	</div>

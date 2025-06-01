@@ -26,12 +26,13 @@
 
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold text-center text-gray-800 mb-10">
-      Teacher Dashboard
+      Dashboard อาจารย์
     </h1>
   
     {#if visibleMenuItems.length > 0}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
         {#each visibleMenuItems as item (item.id)}
+          {#if item.id !== "sprade_teacher" && item.id !== "sprade_subject_teacher"}
           <button
             on:click={() => handleCardClick(item.id)}
             class="bg-white rounded-xl shadow-lg p-6 text-center transform transition-all duration-300 hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex flex-col items-center justify-start h-full min-h-[180px]"
@@ -45,6 +46,7 @@
               {item.label}
             </h2>
           </button>
+          {/if}
         {/each}
       </div>
     {:else if menuItems.length > 0}

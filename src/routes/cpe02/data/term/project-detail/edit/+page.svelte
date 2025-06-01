@@ -38,7 +38,6 @@
   let noAdviserYet = false; // State for "No adviser selected yet"
 
 
-
   // --------- Lifecycle Methods ---------
   onMount(async () => {
     // Verify JWT token and extract projectId
@@ -97,8 +96,6 @@
             activities: [], // or some default activities if needed
           };
         }
-        //console.log("Project data loaded:", project);
-        // Ensure project.adviser is an array
         if (!project.adviser || !Array.isArray(project.adviser)) {
           project.adviser = [];
         }
@@ -133,7 +130,13 @@
    */
   async function loadAdviserList() {
     try {
-      const res = await fetch(`/api/teacher-data`);
+      const res = await fetch(`/api/teacher-data`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "max-age=60",
+        },
+      });
       
       if (res.ok) {
         const responseData = await res.json();
@@ -144,9 +147,9 @@
             value: teacher.email,
             label: teacher.name,
             email: teacher.email,
-            Approval: teacher.Approval
           }));
         }
+
       } else {
         throw new Error(`Failed to fetch teacher data: ${res.statusText}`);
       }
@@ -256,32 +259,19 @@
   }
 
   /**
-   * ลบรูปภาพที่มีอยู่ออกจาก Firebase Storage และโปรเจกต์
+   * Marks an existing image for removal from the current project data in the UI.
+   * The image is removed from the local `project.images` array.
+   * Actual deletion from Firebase Storage is handled during form submission (`handleSubmit`).
    */
-  async function deleteImage(imageUrl, index) {
-    // Confirm before deletion
-    const confirmDelete = window.confirm("คุณต้องการลบรูปภาพนี้จริงๆ หรือไม่?");
-    if (!confirmDelete) {
+  function markExistingImageForRemoval(index) {
+    if (!project || !project.images || index < 0 || index >= project.images.length) {
+      console.error("Invalid call to markExistingImageForRemoval: project or images array is not properly initialized or index is out of bounds.");
       return;
     }
-
-    try {
-      // Delete from Firebase Storage
-      const imageRef = ref(storage, imageUrl.url);
-      await deleteObject(imageRef);
-
-      // Remove from project images array
+    const imageToRemove = project.images[index];
+    const imageName = imageToRemove.title || `รูปภาพ (ลำดับที่ ${index + 1})`; // Fallback name
+    
       project.images = project.images.filter((_, i) => i !== index);
-
-      // Update project document in Firestore
-      const docRef = doc(db, "project-approve", projectId);
-      await setDoc(docRef, project);
-
-      successToast("ลบรูปภาพเรียบร้อยแล้ว");
-    } catch (error) {
-      console.error("Error deleting image:", error);
-      dangerToast("เกิดข้อผิดพลาดในการลบรูปภาพ: " + error);
-    }
   }
 
   // --------- Form Submission Functions ---------
@@ -292,38 +282,114 @@
   async function handleSubmit(event) {
     event.preventDefault();
     isLoading = true;
+    const projectDocRef = doc(db, "project-approve", projectId); // Define project document reference once
+    const previousVersionDocRef = doc(db, "project-approve", projectId, "project_versions", "previous_version");
 
     try {
-      // Upload images first if there are any
+      const projectStateBeforeThisSaveSnap = await getDoc(projectDocRef);
+      const currentOldPreviousVersionSnap = await getDoc(previousVersionDocRef);
+
+      let imagesFromOverwrittenPreviousVersion = []; // Images from V(n-2)
+
+      if (projectStateBeforeThisSaveSnap.exists()) {
+        const projectStateBeforeThisSaveData = projectStateBeforeThisSaveSnap.data(); // This is V(n-1) data
+
+        // Store images from V(n-2) if it exists
+        if (currentOldPreviousVersionSnap.exists()) {
+          const currentOldPreviousVersionData = currentOldPreviousVersionSnap.data();
+          if (currentOldPreviousVersionData.images && Array.isArray(currentOldPreviousVersionData.images)) {
+            imagesFromOverwrittenPreviousVersion = [...currentOldPreviousVersionData.images];
+          }
+        }
+
+        // Save projectStateBeforeThisSaveData (V(n-1)) as the new "previous_version"
+        await setDoc(previousVersionDocRef, {
+          ...projectStateBeforeThisSaveData,
+          archivedAt: new Date(),
+        });
+
+      } else {
+        console.warn(
+          "Original project document (that would become the new previous_version) not found. Skipping previous version save and smart deletion of old images based on it."
+        );
+        // If the main project doc doesn't exist, it's like creating a new one.
+        // No V(n-1) to save as previous.
+        // However, if currentOldPreviousVersionSnap (V(n-2)) exists, its images are candidates for deletion if not in the new project.
+        if (currentOldPreviousVersionSnap.exists() && currentOldPreviousVersionSnap.data().images) {
+            imagesFromOverwrittenPreviousVersion = [...currentOldPreviousVersionSnap.data().images];
+        }
+      }
+
+      // Upload new images if there are any selected
       if (selectedFiles.length > 0) {
-        const uploadSuccess = await uploadImages();
+        const uploadSuccess = await uploadImages(); // This function updates project.images internally
         if (!uploadSuccess) {
           throw new Error("การอัปโหลดรูปภาพล้มเหลว");
         }
       }
-
-      // Update Firestore document
-      const docRef = doc(db, "project-approve", projectId);
+      // `project.images` (Svelte state) is now fully updated for V(n) (includes newly uploaded images and excludes UI-removed ones)
+      const finalImageUrlsInNewCurrentVersion_Vn = (project.images || []).map(img => img.url);
+      const finalImageUrlsInNewPreviousVersion_Vn_minus_1 = (projectStateBeforeThisSaveSnap.exists() ? (projectStateBeforeThisSaveSnap.data().images || []) : []).map(img => img.url);
       
-      // Reset task statuses
       const updatedTasks = { ...project.Tasks };
       Object.keys(updatedTasks).forEach((key) => {
-        if (updatedTasks[key].status !== "approve") {
+        // Ensure Tasks and its entries are defined and are objects
+        if (updatedTasks[key] && typeof updatedTasks[key] === 'object' && updatedTasks[key].status !== "approve") {
           updatedTasks[key].status = "wait";
         }
       });
 
-      const updatedProject = {
-        ...project,
+      const projectDataToSave = {
+        ...project, // 'project' (Svelte state) contains all form fields for V(n)
         Tasks: updatedTasks,
+        lastModified: new Date(), // Add/update a 'lastModified' timestamp on the main document
       };
 
-      await setDoc(docRef, updatedProject);
+      // Update the main Firestore document to V(n)
+      await setDoc(projectDocRef, projectDataToSave);
+
+      // Perform actual deletion from Storage for images from V(n-2)
+      // that are not in V(n-1) (new previous) AND not in V(n) (new current)
+      if (imagesFromOverwrittenPreviousVersion.length > 0) {
+        const imagesActuallyToDelete = imagesFromOverwrittenPreviousVersion.filter(oldImage => {
+          return oldImage.url && 
+                 !finalImageUrlsInNewPreviousVersion_Vn_minus_1.includes(oldImage.url) &&
+                 !finalImageUrlsInNewCurrentVersion_Vn.includes(oldImage.url);
+        });
+
+        if (imagesActuallyToDelete.length > 0) {
+          //console.log("Attempting to delete images from storage:", imagesActuallyToDelete.map(img => img.url));
+          const deletePromises = imagesActuallyToDelete.map(async (image) => {
+            let storagePathAttempted;
+            try {
+              if (image.url.startsWith('gs://')) {
+                storagePathAttempted = image.url;
+              } else {
+                const url = new URL(image.url);
+                const pathSegments = url.pathname.split('/o/');
+                if (pathSegments.length > 1) {
+                  storagePathAttempted = decodeURIComponent(pathSegments[1].split('?')[0]);
+                } else {
+                  throw new Error(`Could not parse storage path from HTTPS URL.`);
+                }
+              }
+              const imageRef = ref(storage, storagePathAttempted);
+              await deleteObject(imageRef);
+              //console.log(`Successfully deleted from storage: ${storagePathAttempted}`);
+            } catch (error) {
+              console.error(`Failed to delete image ${image.url} (path: ${storagePathAttempted || 'unknown'}) from storage:`, error);
+              warningToast(`ไม่สามารถลบรูปภาพเก่า (${image.title || image.url.substring(image.url.lastIndexOf('/') + 1)}) ออกจากระบบจัดเก็บได้`);
+            }
+          });
+          await Promise.all(deletePromises);
+        }
+      }
+
       successToast("แก้ไขข้อมูลเรียบร้อยแล้ว!");
       goToProjectDetailPage(projectId);
     } catch (error) {
       console.error("Error updating document:", error);
-      dangerToast("เกิดข้อผิดพลาดในการอัปเดตข้อมูล: " + error);
+      dangerToast("เกิดข้อผิดพลาดในการอัปเดตข้อมูล: " + error.message);
     } finally {
       isLoading = false;
     }
@@ -633,7 +699,7 @@
                         type="button"
                         class="w-full inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                         on:click={() => removePreview(index)}
-                      >
+                      > <!-- svelte-ignore a11y_no_redundant_roles -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                         ลบรูปนี้
                       </button>
@@ -666,9 +732,9 @@
                       <button
                         type="button"
                         class="w-full inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        on:click={() => deleteImage(imageUrl, index)}
+                        on:click={() => markExistingImageForRemoval(index)}
                         disabled={isLoading || isUploading}
-                      >
+                      > <!-- svelte-ignore a11y_no_redundant_roles -->
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                         ลบรูปนี้
                       </button>

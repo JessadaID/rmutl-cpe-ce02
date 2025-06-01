@@ -21,10 +21,11 @@
   }
 
   let adviserList = []; // This will hold { id, value (email), label (name), email, Approval }
-  let activeAdviserTab = 'approved'; // 'approved' or 'unapproved'
+  let isLoadingAdvisers = true; // To track loading state of adviser list
   let noAdviserYet = false; // New state for "No adviser selected yet"
 
   onMount(async () => {
+    isLoadingAdvisers = true;
     try {
       const res = await fetch(`/api/teacher-data`);
       if (res.ok) {
@@ -34,16 +35,22 @@
             id: `adviser${index + 1}`,
             value: teacher.email, // Keep value for potential reference, but use email directly
             label: teacher.name,
-            email: teacher.email,
-            Approval: teacher.Approval
+            email: teacher.email
+            // Approval property is no longer used for categorization here
           }));
+        } else {
+          adviserList = []; // Ensure list is empty if data is not as expected
+          console.warn("Fetched teacher data is not in the expected format or is empty.");
         }
       } else {
          throw new Error(`Failed to fetch teacher data: ${res.statusText}`);
       }
     } catch (error) {
       console.error("Error fetching adviser list:", error);
+      adviserList = []; // Ensure list is empty on error
       dangerToast(`ไม่สามารถดึงข้อมูลอาจารย์ที่ปรึกษาได้: ${error.message}`);
+    } finally {
+      isLoadingAdvisers = false;
     }
   });
 
@@ -77,14 +84,6 @@
     if (noAdviserYet) {
       adviser = []; // Clear selected advisers if "no adviser" is checked
     }
-  }
-
-  // Computed properties for filtered adviser lists
-  $: approvedAdvisers = adviserList.filter(adv => adv.Approval);
-  $: unapprovedAdvisers = adviserList.filter(adv => !adv.Approval);
-
-  function switchAdviserTab(tabName) {
-    activeAdviserTab = tabName;
   }
 
 </script>
@@ -201,82 +200,33 @@
 
     <!-- Adviser Selection Area (Tabs and List) -->
     <div class:opacity-50={noAdviserYet} class:pointer-events-none={noAdviserYet} class="mt-2">
-      <!-- Tab Navigation -->
-      <div class="border-b border-gray-200">
-        <nav class="-mb-px flex space-x-4" aria-label="Tabs">
-          <button
-            type="button"
-            on:click={() => switchAdviserTab('approved')}
-            disabled={noAdviserYet}
-            class={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
-              ${activeAdviserTab === 'approved' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            อาจารย์ที่อนุมัติแล้ว ({approvedAdvisers.length})
-          </button>
-          <button
-            type="button"
-            on:click={() => switchAdviserTab('unapproved')}
-            disabled={noAdviserYet}
-            class={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
-              ${activeAdviserTab === 'unapproved' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            อาจารย์ที่ยังไม่อนุมัติ ({unapprovedAdvisers.length})
-          </button>
-        </nav>
-      </div>
-
-      <!-- Tab Content -->
+      <!-- Adviser List -->
       <div class="mt-1 max-h-60 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50 space-y-3">
-        {#if activeAdviserTab === 'approved'}
-          {#if approvedAdvisers.length === 0}
-            <p class="text-gray-500 text-sm">{adviserList.length === 0 ? 'กำลังโหลดรายชื่ออาจารย์...' : 'ไม่มีอาจารย์ที่ได้รับการอนุมัติ'}</p>
-          {:else}
-            {#each approvedAdvisers as adv (adv.id)}
-              <div class="relative flex items-start">
-                <div class="flex h-5 items-center">
-                  <input
-                    type="checkbox"
-                    id={`${adv.id}-approved`}
-                    value={adv.email}
-                    checked={isAdviserSelected(adv.email)}
-                    on:change={(event) => handleAdviserChange(event, adv)}
-                    disabled={noAdviserYet}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                </div>
-                <div class="ml-3 text-sm">
-                  <label for={`${adv.id}-approved`} class="font-medium text-gray-700 cursor-pointer">
-                    {adv.label || adv.email}
-                  </label>
-                </div>
+        {#if isLoadingAdvisers}
+          <p class="text-gray-500 text-sm">กำลังโหลดรายชื่ออาจารย์...</p>
+        {:else if adviserList.length === 0}
+          <p class="text-gray-500 text-sm">ไม่มีข้อมูลอาจารย์ในระบบ</p>
+        {:else}
+          {#each adviserList as adv (adv.id)}
+            <div class="relative flex items-start">
+              <div class="flex h-5 items-center">
+                <input
+                  type="checkbox"
+                  id={adv.id}
+                  value={adv.email}
+                  checked={isAdviserSelected(adv.email)}
+                  on:change={(event) => handleAdviserChange(event, adv)}
+                  disabled={noAdviserYet}
+                  class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
               </div>
-            {/each}
-          {/if}
-        {:else if activeAdviserTab === 'unapproved'}
-          {#if unapprovedAdvisers.length === 0}
-            <p class="text-gray-500 text-sm">{adviserList.length === 0 ? 'กำลังโหลดรายชื่ออาจารย์...' : 'ไม่มีอาจารย์ที่ยังไม่ได้รับการอนุมัติ'}</p>
-          {:else}
-            {#each unapprovedAdvisers as adv (adv.id)}
-              <div class="relative flex items-start">
-                <div class="flex h-5 items-center">
-                  <input
-                    type="checkbox"
-                    id={`${adv.id}-unapproved`}
-                    value={adv.email}
-                    checked={isAdviserSelected(adv.email)}
-                    on:change={(event) => handleAdviserChange(event, adv)}
-                    disabled={noAdviserYet}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                </div>
-                <div class="ml-3 text-sm">
-                  <label for={`${adv.id}-unapproved`} class="font-medium text-gray-700 cursor-pointer">
-                    {adv.label || adv.email} <span class="italic text-gray-500">(ยังไม่ได้รับการอนุมัติ)</span>
-                  </label>
-                </div>
+              <div class="ml-3 text-sm">
+                <label for={adv.id} class="font-medium text-gray-700 cursor-pointer">
+                  {adv.label || adv.email}
+                </label>
               </div>
-            {/each}
-          {/if}
+            </div>
+          {/each}
         {/if}
       </div>
     </div>
