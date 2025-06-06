@@ -20,6 +20,7 @@
     import Process from "./Process.svelte"; // Adjust the import path as necessary
     import { verifyJWT ,createJWT } from "$lib/jwt"; // Adjust the import path as necessary
   import StudentSelect from './student_select.svelte';
+  import ProjectScore from './Project_score.svelte';
   
     let userEmail = null; // Store user email from auth check
     let project = null;
@@ -49,7 +50,7 @@
 
     let activeMainView = 'current'; // 'current' or 'previous_version'
 
-
+    let form_data ;
     // Function to open image modal
     function openImageModal(image) {
       selectedImage = image;
@@ -77,6 +78,10 @@
       isLoadingVersions = true;
       try {
         const versionsRef = collection(db, "project-approve", projectId, "project_versions");
+        const form_respond = await fetch("/api/form-data?term="+project.term);
+        form_data = (await form_respond.json()).data;
+        
+
         const versionsSnapshot = await getDocs(versionsRef);
 
         projectVersions = versionsSnapshot.docs.map(doc => ({
@@ -215,7 +220,7 @@
             activeTaskView = 'process';
           } else if (canViewDirectorScores) {
             activeTaskView = 'scores';
-          }
+          } 
           
   
         } else {
@@ -575,49 +580,8 @@
                           {role}
                       />
                     {:else if activeTaskView === 'scores'}
-                      {#if project.directors && project.directors.length > 0}
-                        <ul class="space-y-3">
-                            {#each project.directors as director (director.email)}
-                                <li class="p-3 bg-gray-50 rounded-md border border-gray-200">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="font-medium text-gray-700">{director.name || director.email}</span>
-                                        {#if director.score !== undefined && director.score !== null}
-                                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-                                                ให้คะแนนแล้ว: {director.score} / {project.max_score || 100}
-                                            </span>
-                                        {:else}
-                                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
-                                                ยังไม่ได้ให้คะแนน
-                                            </span>
-                                        {/if}
-                                    </div>
-                                    {#if director.comments && director.comments.trim() !== ""}
-                                        <p class="text-sm text-gray-600 mt-1 pl-2 border-l-2 border-gray-300">
-                                            <span class="font-medium">ความเห็น:</span> {director.comments}
-                                        </p>
-                                    {/if}
-                                    {#if director.ratedAt}
-                                        <p class="text-xs text-gray-500 mt-1 text-right">
-                                            เมื่อ: {new Date(director.ratedAt).toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    {/if}
-                                </li>
-                            {/each}
-                        </ul>
-                        {@const ratedDirectors = project.directors.filter(d => d.score !== undefined && d.score !== null)}
-                        {#if ratedDirectors.length > 0}
-                            {@const totalScore = ratedDirectors.reduce((sum, d) => sum + Number(d.score), 0)}
-                            {@const averageScore = totalScore / ratedDirectors.length}
-                            <div class="mt-4 pt-4 border-t border-gray-200">
-                                <p class="text-md font-semibold text-gray-700">
-                                    คะแนนเฉลี่ย: {averageScore.toFixed(2)} / {project.max_score || 100}
-                                    <span class="text-sm text-gray-500"> (จากกรรมการ {ratedDirectors.length} ท่าน)</span>
-                                </p>
-                            </div>
-                        {/if}
-                      {:else}
-                          <p class="text-sm text-gray-500">ยังไม่มีข้อมูลกรรมการสำหรับโครงงานนี้</p>
-                      {/if}
+                      <ProjectScore project={project} form_data={form_data}/>
+
                     {:else if activeTaskView === 'exam'}
                     <StudentSelect projectId={projectId}/>
                     {/if}
@@ -631,52 +595,7 @@
                   </div>
               {:else if canViewDirectorScores}
                 <!-- Only Director scores -->
-                  <div class="bg-white shadow-lg rounded-lg p-6">
-                      <h2 class="text-xl font-semibold text-gray-800 mb-4">คะแนนจากกรรมการ</h2>
-                      {#if project.directors && project.directors.length > 0}
-                          <ul class="space-y-3">
-                              {#each project.directors as director (director.email)}
-                                  <li class="p-3 bg-gray-50 rounded-md border border-gray-200">
-                                      <div class="flex justify-between items-center mb-1">
-                                          <span class="font-medium text-gray-700">{director.name || director.email}</span>
-                                          {#if director.score !== undefined && director.score !== null}
-                                              <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-                                                  ให้คะแนนแล้ว: {director.score} / {project.max_score || 100}
-                                              </span>
-                                          {:else}
-                                              <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
-                                                  ยังไม่ได้ให้คะแนน
-                                              </span>
-                                          {/if}
-                                      </div>
-                                      {#if director.comments && director.comments.trim() !== ""}
-                                          <p class="text-sm text-gray-600 mt-1 pl-2 border-l-2 border-gray-300">
-                                              <span class="font-medium">ความเห็น:</span> {director.comments}
-                                          </p>
-                                      {/if}
-                                      {#if director.ratedAt}
-                                          <p class="text-xs text-gray-500 mt-1 text-right">
-                                              เมื่อ: {new Date(director.ratedAt).toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                          </p>
-                                      {/if}
-                                  </li>
-                              {/each}
-                          </ul>
-                          {@const ratedDirectors = project.directors.filter(d => d.score !== undefined && d.score !== null)}
-                          {#if ratedDirectors.length > 0}
-                              {@const totalScore = ratedDirectors.reduce((sum, d) => sum + Number(d.score), 0)}
-                              {@const averageScore = totalScore / ratedDirectors.length}
-                              <div class="mt-4 pt-4 border-t border-gray-200">
-                                  <p class="text-md font-semibold text-gray-700">
-                                      คะแนนเฉลี่ย: {averageScore.toFixed(2)} / {project.max_score || 100}
-                                      <span class="text-sm text-gray-500"> (จากกรรมการ {ratedDirectors.length} ท่าน)</span>
-                                  </p>
-                              </div>
-                          {/if}
-                      {:else}
-                          <p class="text-sm text-gray-500">ยังไม่มีข้อมูลกรรมการสำหรับโครงงานนี้</p>
-                      {/if}
-                  </div>
+                  <ProjectScore project={project} />
               {/if}
             </div>
           </div>

@@ -20,7 +20,8 @@ export async function GET({ url }) {
       'term',
       'createdAt',
       'updatedAt',
-      'projectLimit'
+      'projectLimit',
+      'directorScoreLimit'
     ];
 
     if (isOpenParam !== null) {
@@ -49,6 +50,7 @@ export async function GET({ url }) {
         createdAt: convertFirestoreTimestamp(docData?.createdAt),
         updatedAt: convertFirestoreTimestamp(docData?.updatedAt),
         projectLimit: docData?.projectLimit || 0,
+        directorScoreLimit: docData?.directorScoreLimit || 0
       };
     });
 

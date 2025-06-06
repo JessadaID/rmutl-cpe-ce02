@@ -1,5 +1,6 @@
 <script>
     import { onMount } from "svelte";
+    import { goto } from "$app/navigation";
     import { goToProject_Details } from "$lib/NavigateWithToken";
     import Loading from "$lib/components/loading.svelte";
     let projects = [];
@@ -56,16 +57,6 @@
                                 return d.name || d.email || "ไม่ระบุ";
                             }
                         );
-
-                        // Extract chairman name from the first adviser
-                        let chairmanName = "ไม่ระบุ";
-                        if (Array.isArray(projectData.adviser) && projectData.adviser.length > 0) {
-                            const firstAdviser = projectData.adviser[0];
-                            if (firstAdviser) {
-                                chairmanName = firstAdviser.name || firstAdviser.email || "ไม่ระบุ";
-                            }
-                        }
-
                         const directorCount = directorsArray.length;
 
                         if (directorCount > maxDirectors) {
@@ -76,7 +67,6 @@
                             ...projectData,
                             directorNames: extractedDirectorNames,
                             directorCount: directorCount,
-                            chairmanName: chairmanName,
                         };
                     });
                 } else {
@@ -138,10 +128,26 @@
     function handleSearch() {
         applyFilters();
     }
+
+    function goBack() {
+        goto('/cpe02');
+    }
 </script>
 
-<div class="max-w-4xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6">ข้อมูลโครงงาน</h1>
+
+<div class="max-w-4xl mx-auto mt-3">
+     <button
+            on:click={goBack}
+            class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-1 px-2 rounded-lg shadow-sm transition duration-150 ease-in-out flex items-center"
+        >
+            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-left"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 6l-6 6l6 6" /></svg>
+           
+        </button>
+
+    <div class="flex justify-between items-center mb-6 mt-3">
+        <h1 class="text-2xl font-bold text-gray-800">ตารางลงชื่อโครงงาน</h1>
+       
+    </div>
 
     {#if loading}
         <Loading />
@@ -151,7 +157,7 @@
         </div>
     {:else}
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div class="mb-6 space-y-4">
+            <div class="mb-8 space-y-4">
                 <div class="flex flex-col md:flex-row gap-4">
                     <div class="w-full md:w-1/3">
                         <label for="term-display" class="block text-sm font-medium text-gray-700 mb-1">ภาคการศึกษา</label>
@@ -181,7 +187,7 @@
                 </div>
             </div>
 
-            <div class="grid gap-4">
+            <div>
                 {#if filteredProjects.length === 0}
                     <div class="text-center py-8 text-gray-500">
                         <p>ไม่พบโครงงานที่ตรงกับเงื่อนไขการค้นหา</p>
@@ -191,17 +197,14 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         ชื่อโครงงาน
                                     </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        ประธานกรรมการ
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
                                         จำนวนกรรมการ
                                     </th>
                                     {#each Array(maxDirectors) as _, index}
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             กรรมการ {index + 1}
                                         </th>
                                     {/each}
@@ -210,17 +213,14 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 {#each filteredProjects as project (project.id)}
                                     <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4">
+                                        <td class="px-4 py-4">
                                             <div class="text-sm text-blue-600 hover:underline cursor-pointer" on:click={() => goToProject_Details(project.id)}>{project.project_name_th}</div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-900">{project.chairmanName}</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-4 py-4 whitespace-nowrap text-center">
                                             <div class="text-sm text-gray-900">{project.directorCount}</div>
                                         </td>
                                         {#each Array(maxDirectors) as _, index}
-                                            <td class="px-6 py-4 whitespace-nowrap">
+                                            <td class="px-4 py-4 whitespace-nowrap">
                                                 <div class="text-sm text-gray-900">
                                                     {#if project.directorNames && index < project.directorNames.length}
                                                         {project.directorNames[index]}

@@ -12,15 +12,15 @@
   async function navigateWithToken(term) {
     const auth = getAuth();
     if (!auth.currentUser) {
-      warningToast('กรุณาเข้าสู่ระบบเพื่อกรอกแบบฟอร์ม');
+ warningToast('กรุณาเข้าสู่ระบบเพื่อดำเนินการ');
       return;
     }
-		try {
-			const payload = { term };
-			const token = await createJWT(payload);
-			//console.log('Token:', token);
-			goto(`/cpe02/form?token=${token}`);
-		} catch (err) {
+ try {
+ const payload = { term };
+ const token = await createJWT(payload);
+ //console.log('Token:', token);
+ goto(`/cpe02/form?token=${token}`);
+ } catch (err) {
 			console.error('Error creating JWT:', err);
 			// Handle error appropriately, e.g., display an error message to the user
 		}
@@ -39,33 +39,6 @@
   <div class="w-full max-w-5xl text-center mb-8" >
     <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">แบบเสนอโครงงาน CE02</h1>
     <p class="text-lg text-gray-600">จัดการแบบฟอร์มเสนอหัวข้อโครงงานคอมพิวเตอร์ของคุณ</p>
-  </div>
-
-  <div class="w-full max-w-5xl mb-8" transition:fade={{ duration: 500 }}>
-    <div
-      class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:scale-[1.03]"
-    >
-      <div class="p-8 flex flex-col items-center text-center h-full">
-        <div class="mb-5 text-purple-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-book-2" width="64" height="64" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z" />
-            <path d="M19 16h-12a2 2 0 0 0 -2 2" />
-            <path d="M9 8h6" />
-          </svg>
-        </div>
-        <h2 class="text-2xl font-semibold text-gray-800 mb-3">รายละเอียดรายวิชา</h2>
-        <p class="text-gray-600 mb-6 flex-grow">
-          ดูรายละเอียดรายวิชาและข้อมูลที่เกี่ยวข้องกับโครงงาน
-        </p>
-        <a href="/cpe02/course"
-         
-          class="w-full mt-auto bg-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-        >
-          ดูรายละเอียดรายวิชา
-        </a>
-      </div>
-    </div>
   </div>
 
 
@@ -132,6 +105,75 @@
         </a>
       </div>
     </div>
+
+
+    <!-- Card 3: รายละเอียดวิชา -->
+    <div
+      class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:scale-[1.03]"
+    >
+      <div class="p-8 flex flex-col items-center text-center h-full">
+         <div class="mb-5 text-purple-600">
+           <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-book-2" width="64" height="64" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z" />
+            <path d="M19 16h-12a2 2 0 0 0 -2 2" />
+            <path d="M9 8h6" />
+           </svg>
+         </div>
+        <h2 class="text-2xl font-semibold text-gray-800 mb-3">รายละเอียดรายวิชา</h2>
+        <p class="text-gray-600 mb-6 flex-grow">
+          ดูรายละเอียดรายวิชาและข้อมูลที่เกี่ยวข้องกับโครงงาน
+        </p>
+        <a
+          href="/cpe02/course"
+          class="w-full mt-auto inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+        >
+          ดูรายละเอียดรายวิชา
+        </a>
+      </div>
+    </div>
+
+
+    <!-- Card 4: ดูเวลาว่างอาจารย์ -->
+    <div
+      class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:scale-[1.03]"
+    >
+      <div class="p-8 flex flex-col items-center text-center h-full">
+         <div class="mb-5 text-cyan-600">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="64" height="64" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+              <path d="M16 3l0 4" />
+              <path d="M8 3l0 4" />
+              <path d="M4 11l7 0" />
+              <path d="M18 18m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+              <path d="M18 16.5l0 1.5l.5 0" />
+           </svg>
+         </div>
+        <h2 class="text-2xl font-semibold text-gray-800 mb-3">ตารางลงชื่อโครงงาน</h2>
+        <p class="text-gray-600 mb-6 flex-grow">
+          ตรวจสอบตารางการลงชื่อของกรรมการที่เกี่ยวข้องกับโครงงาน
+        </p>
+    
+          
+          {#if latestTerm}
+          <a
+            href="/cpe02/teacher-availability" 
+            class="w-full mt-auto bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            ดูตารางลงชื่อโครงงาน เทอม : {latestTerm.term}
+          </a>
+        {:else}
+          <a
+            href="/cpe02/#"
+            class="w-full mt-auto bg-gray-400 text-white px-6 py-3 rounded-lg font-medium cursor-not-allowed"
+          >
+            ยังไม่มีตารางการลงชื่อที่เปิดให้ดู
+          </a>
+        {/if}
+      </div>
+    </div>
+
   </div>
 </div>
 

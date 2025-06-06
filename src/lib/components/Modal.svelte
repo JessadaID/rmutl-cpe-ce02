@@ -9,11 +9,13 @@
   export let loading = false;
   export let showDelete = false; // Control visibility of delete button
   export let projectLimitValue = null;
+  export let directorScoreLimitValue = 0;
 
   function handleSave() {
   dispatch('save', { 
     termName: value, // Assuming 'value' is the prop for term name
-    projectLimit: projectLimitValue 
+    projectLimit: projectLimitValue ,
+    directorScoreLimit: directorScoreLimitValue
   });
 }
 
@@ -71,6 +73,16 @@
           bind:value={projectLimitValue} 
           placeholder="เช่น 5" 
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed" 
+          min="0"
+        />
+
+        <label for="directorScoreLimitInput" class="block text-sm font-medium text-gray-700 mb-2 mt-2">คะแนนเต็ม (กรรมการ)</label>
+        <input 
+          id="directorScoreLimitInput" 
+          type="number" 
+          bind:value={directorScoreLimitValue} 
+          placeholder="เช่น 30" 
+          class="w-full px-3 py-2 border border-gray-30" 
           min="0"
         />
       </div>

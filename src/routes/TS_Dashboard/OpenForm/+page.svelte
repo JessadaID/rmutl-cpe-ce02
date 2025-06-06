@@ -25,6 +25,7 @@
     let currentTermName = ""; // Bound to the modal's input
     let currentEditingTerm = null; // Stores the term object when editing
     let currentProjectLimit: number | null = null; // For the new input
+    let currentDirectorScoreLimit: number | null = null; // For directorScoreLimit
     let modalTitle = "";
     
     let messageBody = "";
@@ -69,6 +70,7 @@
       modalTitle = `แก้ไขข้อมูลเทอม: ${term.term}`;
       currentTermName = term.term;
       currentProjectLimit = term.projectLimit === undefined ? 5 : term.projectLimit; // Default to 5 if not set
+      currentDirectorScoreLimit = term.directorScoreLimit === undefined ? 100 : term.directorScoreLimit; // Default to 100 if not set
       currentEditingTerm = term;
       showTermModal = true;
     }
@@ -78,6 +80,7 @@
       modalTitle = 'สร้างเทอมใหม่';
       currentTermName = "";
       currentProjectLimit = 5; // Default project limit for new terms
+      currentDirectorScoreLimit = 30; // Default director score limit
       currentEditingTerm = null;
       showTermModal = true;
     }
@@ -127,8 +130,7 @@
       };
       showConfirmModal = true;
     }
-
-    async function processUpdateTerm(updatedName: string, projectLimit: number | null) {
+    async function processUpdateTerm(updatedName: string, projectLimit: number | null, directorScoreLimit: number | null) {
       if (!currentEditingTerm || !updatedName.trim()) return;
   
       loading = true;
@@ -137,6 +139,7 @@
         await updateDoc(termRef, {
           term: updatedName.trim(),
           projectLimit: projectLimit === null ? 0 : Number(projectLimit),
+          directorScoreLimit: directorScoreLimit === null ? 100 : Number(directorScoreLimit),
           updatedAt: serverTimestamp(),
         });
         await loadTerms();
@@ -149,8 +152,7 @@
         loading = false;
       }
     }
-
-    async function processCreateTerm(newTermName: string, projectLimit: number | null) {
+    async function processCreateTerm(newTermName: string, projectLimit: number | null, directorScoreLimit: number | null) {
       if (!newTermName.trim()) return;
 
       loading = true;
@@ -171,6 +173,7 @@
         batch.set(newFormRef, {
           term: newTermName.trim(),
           projectLimit: projectLimit === null ? 0 : Number(projectLimit),
+          directorScoreLimit: directorScoreLimit === null ? 100 : Number(directorScoreLimit),
           isOpen: false,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -211,12 +214,12 @@
     }
 
     // Updated to handle an object from the modal's save event
-    async function handleModalSave(eventDetail: { termName: string, projectLimit: number | null }) {
+    async function handleModalSave(eventDetail: { termName: string, projectLimit: number | null, directorScoreLimit: number | null }) {
       let success = false;
       if (modalMode === 'create') {
-        success = await processCreateTerm(eventDetail.termName, eventDetail.projectLimit);
+        success = await processCreateTerm(eventDetail.termName, eventDetail.projectLimit, eventDetail.directorScoreLimit);
       } else if (modalMode === 'edit') {
-        success = await processUpdateTerm(eventDetail.termName, eventDetail.projectLimit);
+        success = await processUpdateTerm(eventDetail.termName, eventDetail.projectLimit, eventDetail.directorScoreLimit);
       }
       if (success) {
         closeTermModal();
@@ -227,6 +230,7 @@
       showTermModal = false;
       currentTermName = "";
       currentProjectLimit = null;
+      currentDirectorScoreLimit = null;
       currentEditingTerm = null;
       // modalMode and modalTitle will be reset when opening the modal next time
     }
@@ -350,6 +354,9 @@
           <p class="text-sm text-gray-600 mt-1">
             จำนวนโครงงานที่รับได้: {term.projectLimit !== undefined ? term.projectLimit : 'ไม่ได้กำหนด'}
           </p>
+          <p class="text-sm text-gray-600 mt-1">
+            คะแนนเต็ม (กรรมการ): {term.directorScoreLimit !== undefined ? term.directorScoreLimit : 'ไม่ได้กำหนด (ค่าเริ่มต้น 100)'}
+          </p>
         {/if}
 
         
@@ -366,7 +373,8 @@
     bind:show={showTermModal}
     title={modalTitle}
     bind:value={currentTermName}
-    bind:projectLimitValue={currentProjectLimit} 
+    bind:projectLimitValue={currentProjectLimit}
+    bind:directorScoreLimitValue={currentDirectorScoreLimit}
     loading={loading}
     showDelete={modalMode === 'edit'}
     on:save={(e) => handleModalSave(e.detail)}
