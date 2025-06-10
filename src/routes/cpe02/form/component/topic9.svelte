@@ -124,7 +124,7 @@
               <button
                 type="button"
                 on:click={addMonth}
-                class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 text-xs font-medium transition-colors absolute right-1 opacity-0 group-hover:opacity-100"
+                class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 text-xs font-medium transition-colors absolute right-1 "
                 title="เพิ่มเดือน"
               >
                 + เดือน

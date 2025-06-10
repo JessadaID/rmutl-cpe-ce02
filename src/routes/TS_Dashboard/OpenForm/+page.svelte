@@ -355,7 +355,7 @@
             จำนวนโครงงานที่รับได้: {term.projectLimit !== undefined ? term.projectLimit : 'ไม่ได้กำหนด'}
           </p>
           <p class="text-sm text-gray-600 mt-1">
-            คะแนนเต็ม (กรรมการ): {term.directorScoreLimit !== undefined ? term.directorScoreLimit : 'ไม่ได้กำหนด (ค่าเริ่มต้น 100)'}
+            คะแนนเต็มรายบุคคล (กรรมการ): {term.directorScoreLimit !== undefined ? term.directorScoreLimit : 'ไม่ได้กำหนด (ค่าเริ่มต้น 100)'}
           </p>
         {/if}
 

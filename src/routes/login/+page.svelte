@@ -4,7 +4,7 @@
   import { doc, getDoc } from "firebase/firestore";
   import { goto } from "$app/navigation";
   import { setLoginCookies, clearLoginCookies} from "$lib/auth";
-  import { dangerToast } from "$lib/customtoast";
+  import { dangerToast, warningToast } from "$lib/customtoast";
   import { onMount } from "svelte";
 
   let email = "";
@@ -170,7 +170,6 @@
                 type="email"
                 bind:value={email}
                 on:blur={validateEmail}
-                required
                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300 {emailError ? 'border-red-500' : ''}"
               />
               {#if emailError}
@@ -187,7 +186,6 @@
                 type="password"
                 bind:value={password}
                 on:blur={validatePassword}
-                required
                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300 {passwordError ? 'border-red-500' : ''}"
               />
               {#if passwordError}

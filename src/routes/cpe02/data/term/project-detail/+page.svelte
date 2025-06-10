@@ -395,19 +395,19 @@
             <div class="space-y-6">
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">4. ที่มาและความสำคัญ</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.project_problem || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.project_problem || 'ไม่มีข้อมูล'}</p>
               </div>
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">5. วัตถุประสงค์</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.project_Objective || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.project_Objective || 'ไม่มีข้อมูล'}</p>
               </div>
                <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">6. เอกสาร/งานวิจัยที่เกี่ยวข้อง</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.research_data || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.research_data || 'ไม่มีข้อมูล'}</p>
               </div>
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">7. ทฤษฎีและหลักการ</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.Theory_principles || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.Theory_principles || 'ไม่มีข้อมูล'}</p>
               </div>
   
               <!-- Image Gallery -->
@@ -435,7 +435,7 @@
               {#if project.scope}
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">8. ขอบเขตโครงงาน</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.scope || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.scope || 'ไม่มีข้อมูล'}</p>
               </div>
               {/if}
   
@@ -476,7 +476,7 @@
               {#if project.benefits}
                 <div>
                   <h2 class="text-lg font-semibold text-gray-700 mb-2">10. ประโยชน์ที่คาดว่าจะได้รับ</h2>
-                  <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.benefits || 'ไม่มีข้อมูล'}</p>
+                  <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.benefits || 'ไม่มีข้อมูล'}</p>
                 </div>
               {/if}
 
@@ -496,7 +496,7 @@
               {#if project.refer}
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">12. เอกสารอ้างอิง</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.refer || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.refer || 'ไม่มีข้อมูล'}</p>
               </div>
               {/if}
 

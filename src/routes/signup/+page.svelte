@@ -23,11 +23,34 @@
 			isLoading = true;
 
 			// ตรวจสอบว่ารหัสผ่านและยืนยันรหัสผ่านตรงกันหรือไม่
+			/*
 			if (email == '' || name == '' || password == '' || confirmPassword == '') {
 				warningToast('กรอกข้อมูลให้ครบถ้วน');
 				isLoading = false; // อย่าลืมตั้งค่า isLoading กลับถ้า return ก่อน
 				return;
+			}**/
+
+			if (email == ''){
+				warningToast('กรอกอีเมลของคุณ');
+				isLoading = false; // อย่าลืมตั้งค่า isLoading กลับถ้า return ก่อน
+				return;
 			}
+			if (name == ''){
+				warningToast('กรอกชื่อของคุณ');
+				isLoading = false
+				return;
+			}
+			if (password == ''){
+				warningToast('กรอกรหัสผ่านของคุณ');
+				isLoading = false
+				return;
+			}
+			if (confirmPassword == ''){
+				warningToast('กรอกยืนยันรหัสผ่านของคุณ');
+				isLoading = false
+				return;
+			}
+
 
 			if (password !== confirmPassword) {
 				warningToast('รหัสผ่านไม่ตรงกัน');
@@ -110,7 +133,6 @@
 								type="text"
 								bind:value={name}
 								placeholder="นายเอ บี"
-								required
 								class="px-3 w-full py-2 border rounded-md focus:outline-none shadow-sm focus:ring focus:ring-blue-300"
 							/>
 						</div>
@@ -122,7 +144,6 @@
 							id="email"
 							type="email"
 							bind:value={email}
-							required
 							class="mt-1 w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
 							placeholder="กรอกอีเมลของคุณ"
 						/>
@@ -136,7 +157,6 @@
 								id="password"
 								bind:value={password}
 								type={showPassword ? 'text' : 'password'}
-								required
 								class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 pr-10" 
 								placeholder="กรอกรหัสผ่านของคุณ"
 							/>
@@ -172,7 +192,6 @@
 								id="confirmPassword"
 								bind:value={confirmPassword}
 								type={showConfirmPassword ? 'text' : 'password'}
-								required
 								class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 pr-10"
 								placeholder="กรอกรหัสผ่านของคุณอีกครั้ง"
 							/>

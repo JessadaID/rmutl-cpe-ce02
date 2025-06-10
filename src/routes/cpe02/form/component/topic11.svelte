@@ -66,7 +66,7 @@
 
   <div>
     <label class="block text-sm font-medium text-gray-700 mb-1"
-        >11. ประโยชน์ที่คาดว่าจะได้รับ <span class="text-red-500 font-bold">*</span> (คลิกที่ตารางเพื่อแก้ไข)
+        >11. งบประมาณการดำเนินโครงงาน <span class="text-red-500 font-bold">*</span> (คลิกที่ตารางเพื่อแก้ไข)
       </label>
   <div class="overflow-x-auto relative border rounded-md mb-4">
     

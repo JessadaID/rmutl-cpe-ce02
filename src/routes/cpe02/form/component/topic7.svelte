@@ -1,5 +1,5 @@
 <script>
-
+    import { warningToast } from "$lib/customtoast";
     export let  Theory_principles, imagePreviews, selectedFiles, fileInput, handleTab ;
 
 
@@ -13,7 +13,7 @@
         const validFiles = files.filter(file => {
             if (file.size > MAX_SIZE_BYTES) {
                 // Consider using a toast notification library here for better UX
-                alert(`ไฟล์ "${file.name}" มีขนาดเกิน ${MAX_SIZE_MB}MB และจะไม่ถูกเพิ่ม`);
+                warningToast(`ไฟล์ "${file.name}" มีขนาดเกิน ${MAX_SIZE_MB}MB และจะไม่ถูกเพิ่ม`);
                 return false;
             }
             return file.type.startsWith("image/");
