@@ -6,6 +6,7 @@
 	import { setLoginCookies, clearLoginCookies } from '$lib/auth';
 	import { dangerToast, successToast, warningToast } from '$lib/customtoast';
 
+	let teachers = []; // Array to store teacher emails
 	let name = '';
 	let email = '';
 	let password = '';
@@ -29,6 +30,17 @@
 				isLoading = false; // อย่าลืมตั้งค่า isLoading กลับถ้า return ก่อน
 				return;
 			}**/
+			
+			try {
+				const respond = await fetch('/api/teachers');
+				const data = await respond.json();
+				teachers = data.data;
+				// console.log('Fetched teachers:', teachers);
+			} catch (error) {
+				console.error('Error fetching teachers:', error);
+				dangerToast('เกิดข้อผิดพลาดในการโหลดข้อมูลอาจารย์');
+			}
+
 
 			if (email == ''){
 				warningToast('กรอกอีเมลของคุณ');
@@ -58,6 +70,12 @@
 				return;
 			}
 
+			// Determine role based on email
+			let assignedRole = 'user'; // Default role
+			if (teachers.includes(email)) {
+				assignedRole = 'teacher'; // Assign 'teacher' role if email matches
+			}
+
 			// สร้างผู้ใช้ใน Firebase Authentication
 			// ไม่ควร set cookie ก่อนสมัครสำเร็จ เผื่อกรณี error
 			// setLoginCookies(email, "user",name); // <-- ย้ายไปทำหลังสมัครสำเร็จ
@@ -69,11 +87,11 @@
 			const userDocRef = doc(db, 'users', user.uid);
 			await setDoc(userDocRef, {
 				email: user.email,
-				role: role, // บันทึก Role ของผู้ใช้
+				role: assignedRole, // บันทึก Role ที่กำหนด
 				name: name
 			});
 
-			// เก็บข้อมูลใน Cookies (ทำหลังจากทุกอย่างสำเร็จ)
+			// เก็บข้อมูลใน Cookies (ทำหลังจากทุกอย่างสำเร็จ) โดยใช้ role ที่กำหนด
 			setLoginCookies(email, role, name);
 
 			// แจ้งเตือนผู้ใช้

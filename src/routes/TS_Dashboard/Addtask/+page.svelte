@@ -148,6 +148,7 @@
           throw new Error(Add_Task_data.error || "Failed to add task");
         }else{
           successToast("เพิ่มงานใหม่สำเร็จ");
+          sendNotification(title); // แจ้งเตือนเมื่อเพิ่มงานใหม่สำเร็จ
         }
       }
     } catch (error) {
@@ -210,7 +211,34 @@
       onMount(() => {
           fetchTerms();
       });
+
+      async function sendNotification(taskTitle) {
+        // const actionText = isOpen ? "ปิด" : "เปิด";
+        
+        try {
+          const messageBody = `มีการมอบหมายงานใหม่ในภาคเรียน ${term}: ${taskTitle}`;
+          const title = `มีการมอบหมายงานใหม่`;
+
+          const payload  = { title,messageBody };
+
+          const response = await fetch('/api/notify', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+        } catch (error) {
+          console.error("Error sending notification:", error);
+          dangerToast("เกิดข้อผิดพลาดในการส่งการแจ้งเตือน"+error.message);
+        }
+      }
+
+      
   </script>
+
+
   <div class="container mx-auto px-4 max-w-6xl">
     <div class="mb-5 p-6 bg-white rounded-lg shadow-lg">
       <label for="term-select" class="block text-xl font-semibold text-gray-800 mb-3">

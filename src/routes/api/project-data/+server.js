@@ -15,6 +15,7 @@ function formatDocData(doc) {
     term: docData?.term || "",
     adviser: Array.isArray(docData?.adviser) ? docData.adviser : [],
     directors: docData?.directors || [],
+    email: docData?.email || "",
   };
 }
 
@@ -30,10 +31,11 @@ export async function GET({ url }) {
     const term = url.searchParams.get("term");
     const status = url.searchParams.get("status");
     const email = url.searchParams.get("email");
+    const projectid = url.searchParams.get("projectid");
 
     const projectCollectionRef = adminDb.collection("project-approve");
     let queryRef = projectCollectionRef; // Base query reference for Admin SDK
-
+    let snapshot ;
     // Fields to select based on formatDocData function
     // This reduces the amount of data fetched from Firestore.
     const fieldsToSelect = [
@@ -47,6 +49,12 @@ export async function GET({ url }) {
       'directors'
     ];
 
+   
+    /**
+     * ใช้สำหรับ notification
+     */
+    const select_email = ['email'];
+
     if (term) {
       queryRef = queryRef.where("term", "==", term);
     }
@@ -57,9 +65,16 @@ export async function GET({ url }) {
       // Ensure an index exists in Firestore for this query if combining with other filters.
       queryRef = queryRef.where("email", "==", email);
     }
+    if (projectid) {
+      queryRef = queryRef.where("id", "==", projectid);
+    }
 
     // Apply select() to the query and then get the documents
-    const snapshot = await queryRef.select(...fieldsToSelect).get();
+    if(!projectid){
+      snapshot = await queryRef.select(...fieldsToSelect).get();
+    }else{
+      snapshot = await queryRef.select(...select_email).get();
+    }
     
     if (snapshot.empty) {
       return json({ data: [] }, { status: 200 });

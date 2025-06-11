@@ -20,6 +20,7 @@
     let email = '';
     let projectId = ''; // Variable to hold project ID
     let name = ''; // Variable to hold user's name
+    let student_email = '';
 
     let selectedDates = [];
     let selectedRange = { start: null, end: null };
@@ -57,6 +58,7 @@
         processUserData(); // Extract current user's data
 
         isLoading = false;
+
     });
 
     // --- Load current user's data ---
@@ -139,14 +141,66 @@
             // Signal that availability data has changed for other components (like the layout)
             triggerAvailabilityUpdate();
 
+            // Send notification for the project
+            await sendAvailabilityUpdateNotificationToStudents();
+
         } catch (error) {
             console.error("Error saving availability:", error);
             dangerToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + error.message);
         }
     }
+    
+    async function sendAvailabilityUpdateNotificationToStudents() {
+        if (!projectAvailabilityData) {
+            console.warn("Project data not available for sending notification.");
+            return;
+        }
+        if (!projectId) {
+            console.warn("Project ID not available for sending notification.");
+            return;
+        }
 
-  
+        try{
+            const respond = await fetch("/api/project-data?projectid="+projectId, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await respond.json();
+            //console.log(data.data[0].email)
+            student_email = data.data[0].email;
+        }catch(error){
+            console.error("Error loading project availability:", error);
+        }
 
+        const teacherName = name; // Teacher's name from component scope
+        // Attempt to get a descriptive project name, fallback to projectId
+        const projectDisplayName = projectAvailabilityData.projectNameTh || projectAvailabilityData.projectName || projectId;
+
+        const title = "อัปเดตตารางเวลาอาจารย์";
+        const messageBody = `อาจารย์ ${teacherName} ได้อัปเดตตารางเวลาว่างของท่านสำหรับโครงงาน '${projectDisplayName}'. นักศึกษาที่เกี่ยวข้องกับโครงงานนี้ กรุณาเข้าตรวจสอบและเลือกช่วงเวลานัดหมายใหม่อีกครั้ง (หากท่านได้เลือกไว้แล้ว การเลือกของท่านอาจมีการเปลี่ยนแปลง)`;
+
+
+        // Payload now only contains projectId for targeting, API will fetch emails
+        const payload = { 
+            title, 
+            messageBody,
+            email: student_email 
+        };
+
+        try {
+            const response = await fetch('/api/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+        } catch (error) {
+            console.error("Error sending notification for project:", error);
+            dangerToast("เกิดข้อผิดพลาดในการส่งการแจ้งเตือนสำหรับโครงงาน: " + (error instanceof Error ? error.message : String(error)));
+        }
+    }
 </script>
 
 <!-- Basic Loading State -->

@@ -316,15 +316,13 @@
       </a>
     </div>
   {:else if project}
-    <div class="container mx-auto px-4 py-8 bg-gray-100">
+    <div class="container mx-auto px-4 pb-20 pt-6 w-full h-full bg-gray-100">
       
-     
-
       <!-- Main Content Grid -->
-      <div class="md:flex md:gap-8">
+      <div class="md:flex md:gap-8 ">
   
         <!-- Left Column: Project Details -->
-          <div class="{showTask ? 'md:w-7/12 lg:w-8/12' : 'md:w-10/12 lg:w-8/12 mx-auto'} mb-8 md:mb-0">
+          <div class="{showTask ? 'md:w-7/12 lg:w-8/12' : 'md:w-10/12 lg:w-8/12 mx-auto'} mb-8 md:mb-0 ">
              <!-- Main Navigation Tabs -->
      
             <div class="px-6 py-0  bg-white">
@@ -395,19 +393,19 @@
             <div class="space-y-6">
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">4. ที่มาและความสำคัญ</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.project_problem || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.project_problem || 'ไม่มีข้อมูล'}</p>
               </div>
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">5. วัตถุประสงค์</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.project_Objective || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.project_Objective || 'ไม่มีข้อมูล'}</p>
               </div>
                <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">6. เอกสาร/งานวิจัยที่เกี่ยวข้อง</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.research_data || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.research_data || 'ไม่มีข้อมูล'}</p>
               </div>
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">7. ทฤษฎีและหลักการ</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.Theory_principles || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.Theory_principles || 'ไม่มีข้อมูล'}</p>
               </div>
   
               <!-- Image Gallery -->
@@ -435,7 +433,7 @@
               {#if project.scope}
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">8. ขอบเขตโครงงาน</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.scope || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.scope || 'ไม่มีข้อมูล'}</p>
               </div>
               {/if}
   
@@ -476,7 +474,7 @@
               {#if project.benefits}
                 <div>
                   <h2 class="text-lg font-semibold text-gray-700 mb-2">10. ประโยชน์ที่คาดว่าจะได้รับ</h2>
-                  <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.benefits || 'ไม่มีข้อมูล'}</p>
+                  <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.benefits || 'ไม่มีข้อมูล'}</p>
                 </div>
               {/if}
 
@@ -496,14 +494,14 @@
               {#if project.refer}
               <div>
                 <h2 class="text-lg font-semibold text-gray-700 mb-2">12. เอกสารอ้างอิง</h2>
-                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">&nbsp;&nbsp;&nbsp;&nbsp;{project.refer || 'ไม่มีข้อมูล'}</p>
+                <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{project.refer || 'ไม่มีข้อมูล'}</p>
               </div>
               {/if}
 
             </div>
   
             <!-- Action Buttons -->
-            {#if can_edit}
+            {#if can_edit && activeMainView === 'current'}
               <div class="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row sm:justify-end gap-3">
                   <button
                       class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition disabled:opacity-50"
@@ -570,7 +568,7 @@
                       <Process
                           {project}
                           isLoading={false} 
-                          can_edit_task={can_edit_tasks} 
+                          can_edit_task={activeMainView === 'current' ? can_edit_tasks : false} 
                           Task={termTasks} 
                           isLoadingtext={false} 
                           {visibleStates}

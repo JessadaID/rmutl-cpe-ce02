@@ -35,6 +35,12 @@
         return; // Prevent update if status is not selected
     }
 
+    if (currentStatus === "improvement" && !currentComment.trim()) {
+        dangerToast("กรุณากรอกความคิดเห็นเมื่อเลือกสถานะ 'แก้ไข'");
+        return; // Prevent update if status is 'improvement' but comment is empty
+    }
+   
+
     const taskKey = `Tasks.${index}`;
     const taskUpdate = {
       comment: currentComment,
@@ -97,7 +103,7 @@
       case "approve":
         return { text: "อนุมัติ", class: "bg-green-100 text-green-800" };
       default:
-        return { text: "ยังไม่มีสถานะ", class: "bg-gray-100 text-gray-600" };
+        return { text: "รออนุมัติ", class: "bg-blue-100 text-blue-600" };
     }
   }
 
