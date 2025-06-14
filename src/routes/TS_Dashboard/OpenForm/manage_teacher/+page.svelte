@@ -3,6 +3,8 @@
   import { dangerToast, successToast } from '$lib/customtoast';
   import { onMount } from 'svelte';
   import ConfirmModal from '$lib/components/ConfirmModal.svelte';
+  import { getrolename } from '$lib/Getrolename';
+  import { get } from 'svelte/store';
 
   let teachersFromUsers = [];
   let teachersFromApi = [];
@@ -291,7 +293,7 @@
                   <h3 class="font-semibold text-gray-800">{teacher.name}</h3>
                   <p class="text-sm text-gray-600">{teacher.email}</p>
                   <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mt-1">
-                    {teacher.role}
+                    {getrolename(teacher.role)}
                   </span>
                 </div>
                 <button
@@ -332,7 +334,7 @@
                   <p class="text-sm text-gray-600">{teacher.email || 'ไม่ระบุอีเมล'}</p>
                   {#if teacher.role}
                     <span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mt-1">
-                      {teacher.role}
+                      {getrolename(teacher.role)}
                     </span>
                   {/if}
                 </div>
