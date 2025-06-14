@@ -132,6 +132,21 @@
       savingStates = { ...savingStates, [memberId]: false }; // End saving state for this row
     }
   }
+
+  function rolename(role) {
+    switch (role) {
+      case "user":
+        return "นักศึกษา";
+      case "teacher":
+        return "อาจารย์";
+      case "subject_teacher":
+        return "อาจารย์ประจำวิชา";
+      case "admin":
+        return "ผู้ดูแลระบบ";
+      default:
+        return "ไม่ระบุ";
+    }
+  }
 </script>
 
 <div class="max-w-4xl mx-auto p-4">
@@ -152,7 +167,7 @@
     >
       <option value="">บทบาททั้งหมด</option>
       {#each roles as role}
-        <option value={role}>{role}</option>
+        <option value={role}>{rolename(role)}</option>
       {/each}
     </select>
     <!-- Remove explicit search button as search happens on input/change -->
@@ -207,7 +222,7 @@
                   disabled={savingStates[member.id]}
                 >
                   {#each roles as r}
-                    <option value={r}>{r}</option>
+                    <option value={r}>{rolename(r)}</option>
                   {/each}
                 </select>
               </td>

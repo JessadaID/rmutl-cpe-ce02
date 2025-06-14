@@ -66,7 +66,7 @@
         />
 
 
-         <label for="projectLimitInput" class="block text-sm font-medium text-gray-700 mb-2 mt-2">จำนวนโครงงานที่รับได้</label>
+         <label for="projectLimitInput" class="block text-sm font-medium text-gray-700 mb-2 mt-2">จำนวนโครงงานที่รับได้ในเทอมนี้ (ของที่ปรึกษา)</label>
         <input 
           id="projectLimitInput" 
           type="number" 
@@ -76,7 +76,7 @@
           min="0"
         />
 
-        <label for="directorScoreLimitInput" class="block text-sm font-medium text-gray-700 mb-2 mt-2">คะแนนเต็ม (กรรมการ)</label>
+        <label for="directorScoreLimitInput" class="block text-sm font-medium text-gray-700 mb-2 mt-2">คะแนนเต็มรายบุคคล (กรรมการ)</label>
         <input 
           id="directorScoreLimitInput" 
           type="number" 

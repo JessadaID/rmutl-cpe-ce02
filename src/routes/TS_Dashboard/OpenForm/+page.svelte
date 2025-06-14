@@ -270,32 +270,43 @@
   <div class="container mx-auto px-4 py-8 max-w-4xl">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-3xl font-bold text-gray-800">จัดการเปิด/ปิดฟอร์ม</h1>
-      <button
-        on:click={triggerCreateNewTerm}
-        disabled={loading}
-        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
+      <div class="flex items-center gap-3">
+        <button
+          on:click={triggerCreateNewTerm}
+          disabled={loading}
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <path
-            fill-rule="evenodd"
-            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        สร้างเทอมใหม่
-      </button>
-      <a
-      href="OpenForm/manage_teacher"
-        disabled={loading}
-        class="bg-amber-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-      จัดการรายชื่ออาจารย์
-      </a>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          สร้างเทอมใหม่
+        </button>
+        <a
+          href="OpenForm/manage_teacher"
+          role="button"
+          aria-disabled={loading}
+          on:click={(e) => { if (loading) e.preventDefault(); }}
+          class={`py-2 px-4 rounded-lg font-semibold text-white transition-colors duration-200 flex items-center gap-2
+            ${loading
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-teal-500 hover:bg-teal-600'
+            }`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+            <path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.75.75 0 01-.312-.653c.0-1.7.0-3.185.0-4.674.0-.414.336-.75.75-.75h16.144a.75.75 0 01.75.75c.0 1.489.0 2.975.0 4.673a.75.75 0 01-.312.653l-2.437 1.218a.75.75 0 01-.676 0l-2.533-1.267a.75.75 0 00-.676 0l-2.533 1.267a.75.75 0 01-.676 0l-2.437-1.218z" />
+          </svg>
+          จัดการรายชื่ออาจารย์ (ฟอร์ม)
+        </a>
+      </div>
     </div>
   
     {#if loading}
@@ -324,20 +335,35 @@
                 <button
                   on:click={() => toggleForm(term.id, term.isOpen)}
                   disabled={loading}
-                  class={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                  class={`px-3 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5
                                   ${
                                     term.isOpen
                                       ? "bg-red-50 text-red-600 hover:bg-red-100"
                                       : "bg-green-50 text-green-600 hover:bg-green-100"
                                   }`}
+                  title={term.isOpen ? "ปิดฟอร์ม" : "เปิดฟอร์ม"}
                 >
+                  {#if term.isOpen}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                    </svg>
+                  {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                    </svg>
+                  {/if}
                   {term.isOpen ? "ปิดฟอร์ม" : "เปิดฟอร์ม"}
                 </button>
                 <button
                   on:click={() => openTermModalForEdit(term)}
                   disabled={loading}
-                  class="px-4 py-2 rounded-lg font-medium bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="px-3 py-2 rounded-lg font-medium bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  title="แก้ไขข้อมูลเทอม"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                    <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                  </svg>
                   แก้ไข
                 </button>
               </div>
@@ -351,7 +377,7 @@
             สร้างเมื่อ: {term.createdAt}
           </p>
           <p class="text-sm text-gray-600 mt-1">
-            จำนวนโครงงานที่รับได้: {term.projectLimit !== undefined ? term.projectLimit : 'ไม่ได้กำหนด'}
+            จำนวนโครงงานที่รับได้ (ของที่ปรึกษา): {term.projectLimit !== undefined ? term.projectLimit : 'ไม่ได้กำหนด'}
           </p>
           <p class="text-sm text-gray-600 mt-1">
             คะแนนเต็มรายบุคคล (กรรมการ): {term.directorScoreLimit !== undefined ? term.directorScoreLimit : 'ไม่ได้กำหนด (ค่าเริ่มต้น 100)'}
