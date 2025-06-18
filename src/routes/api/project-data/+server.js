@@ -46,7 +46,6 @@ export async function GET({ url }) {
       }
       
       const data = [formatDocData(doc)];
-      console.log("Fetched specific project data:", data);
       return json({ data }, { status: 200 });
     }
     

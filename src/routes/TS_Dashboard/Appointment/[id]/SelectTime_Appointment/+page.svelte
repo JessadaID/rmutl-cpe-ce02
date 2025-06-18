@@ -21,10 +21,7 @@
     studentRemarks: '', // For editing student's original remarks
     teacherRemarks: ''  // For teacher's own remarks
   };
-  // let teacherAvailableSlots = []; // No longer directly used for selection in edit mode if manually setting time
 
-  // Helper to generate a unique key for a selection card
-  // Uses studentEmail and the original slot ID to ensure uniqueness for editing context
   function getSelectionKey(selection) {
     if (!selection || !selection.studentEmail || !selection.slot || !selection.slot.id) {
       // Fallback for safety, though ideally selection and slot.id should always exist
@@ -32,11 +29,6 @@
     }
     return `${selection.studentEmail}-${selection.slot.id}`;
   }
-
-  // // Function to find a slot by ID from teacherAvailableSlots (no longer needed for manual time input)
-  // function findSlotById(slotId) {
-  //   return teacherAvailableSlots.find(s => s.id === slotId);
-  // }
 
   onMount( async () => {
     currentTeacherEmail = getCookie('email')?.toString() || '';
@@ -51,14 +43,6 @@
       }
       const data = await response.json();
       student_section = data.projectData?.studentSelections || {};
-
-      // // Populate teacherAvailableSlots (no longer strictly needed for manual time input UI)
-      // if (data.projectData?.usersAvailability && data.projectData.usersAvailability[currentTeacherEmail]) {
-      //   teacherAvailableSlots = data.projectData.usersAvailability[currentTeacherEmail].savedSelections || [];
-      // } else {
-      //   console.warn(`Availability data for teacher ${currentTeacherEmail} not found or not in expected format.`);
-      //   teacherAvailableSlots = [];
-      // }
 
     } catch (error) {
       dangerToast(`เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}`);
@@ -151,6 +135,51 @@
           student_section[originalSelection.studentEmail].appointments = updatedAppointments;
           student_section = { ...student_section }; // Trigger Svelte reactivity
           successToast('อัปเดตการนัดหมายเรียบร้อยแล้ว');
+
+          // ---- START SEND NOTIFICATION TO STUDENT ----
+          try {
+            const teacherName = getCookie('name')?.toString() || currentTeacherEmail; // Get teacher's name
+            const studentEmailToNotify = originalSelection.studentEmail;
+            const studentName = originalSelection.studentName || studentEmailToNotify;
+
+            const formattedNewDateTime = newDateTime.toLocaleString('th-TH', {
+              year: 'numeric', month: 'long', day: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            }) + ' น.';
+
+            const notificationTitle = `[แก้ไขนัดหมาย] อาจารย์ ${teacherName} ได้แก้ไขการนัดหมาย`;
+            const notificationMessageBody = 
+              `เรียน นักศึกษา ${studentName},\n\n` +
+              `อาจารย์ ${teacherName} ได้ทำการแก้ไขการนัดหมายสำหรับโครงงานของคุณ\n` +
+              `วันและเวลาใหม่คือ: ${formattedNewDateTime}\n` +
+              (editFormData.teacherRemarks.trim() ? `หมายเหตุจากอาจารย์: ${editFormData.teacherRemarks.trim()}\n` : '') +
+              `กรุณาตรวจสอบรายละเอียดและเตรียมตัวตามวันเวลาใหม่ค่ะ/ครับ`;
+            //console.log('Sending notification with payload:', {
+            //  title: notificationTitle,
+            //  messageBody: notificationMessageBody,
+            //  email: studentEmailToNotify
+            //});
+            
+            const notifyResponse = await fetch('/api/notify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: notificationTitle,
+                messageBody: notificationMessageBody,
+                email: studentEmailToNotify
+              })
+            });
+
+            if (!notifyResponse.ok) {
+              console.warn('การส่งแจ้งเตือนการแก้ไขนัดหมายไปยังนักศึกษาล้มเหลว:', await notifyResponse.text());
+            } else {
+              console.log('ส่งแจ้งเตือนการแก้ไขนัดหมายไปยังนักศึกษาเรียบร้อยแล้ว');
+            }
+          } catch (notifyError) {
+            console.error('เกิดข้อผิดพลาดในการส่งแจ้งเตือนไปยังนักศึกษา:', notifyError);
+          }
+          // ---- END SEND NOTIFICATION TO STUDENT ----
+
         } else {
            warningToast('อัปเดตสำเร็จ แต่การแสดงผลอาจไม่ล่าสุด โปรดรีเฟรช (ไม่พบการนัดหมายในข้อมูล local)');
         }

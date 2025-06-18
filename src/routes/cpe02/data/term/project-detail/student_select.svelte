@@ -115,7 +115,6 @@ import { convertToDate } from '$lib/convertToDate';
     if (saving) return; // Prevent multiple submissions
     saving = true;
     showConfirmationModal = false; // Close modal
-
     try {
       // Replace with your actual API endpoint for booking
       const response = await fetch(`/api/project-availability/${projectId}`, {
@@ -135,12 +134,59 @@ import { convertToDate } from '$lib/convertToDate';
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+        console.error('Error saving selection:', errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      const newAppointmentData = await response.json(); // Assuming API returns the new appointment or updated list
-      if (newAppointmentData.ok){
+      const newAppointmentData  = await response.json(); // Assuming API returns the new appointment or updated list
+      if (newAppointmentData){
         successToast('เลือกวันและบันทึกข้อมูลเรียบร้อยแล้ว');
+
+        // ---- START SEND NOTIFICATION ----
+        try {
+          const teacherInfo = availabilityData.usersAvailability[selectedTeacher];
+          const teacherName = teacherInfo?.name || selectedTeacher; // Fallback to email if name not found
+          const slotObject: AppointmentSlot = JSON.parse(selectedSlot);
+          
+          let appointmentTimeDetails = '';
+          if (slotObject.type === 'single' && slotObject.date) {
+            const date = convertToDate(slotObject.date);
+            appointmentTimeDetails = `${date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}, ${date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
+          } else if (slotObject.type === 'range' && slotObject.start && slotObject.end) {
+            const startDate = convertToDate(slotObject.start);
+            // const endDate = convertToDate(slotObject.end); // endDate not used for start time string
+            appointmentTimeDetails = 
+              `${startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })} ` +
+              `${startDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น. ถึง ` +
+              `${convertToDate(slotObject.end).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
+          } else {
+            appointmentTimeDetails = 'ไม่สามารถระบุเวลาได้';
+          }
+
+          const notificationMessage = 
+            `นักศึกษา: ${studentName} (อีเมล: ${studentEmail})\n` +
+            `ได้ทำการนัดหมายสำหรับการสอบโครงงาน\n` +
+            `กับอาจารย์: ${teacherName} (อีเมล: ${selectedTeacher})\n` +
+            `วันและเวลา: ${appointmentTimeDetails}\n` +
+            (remarks.trim() ? `หมายเหตุจากนักศึกษา: ${remarks.trim()}` : 'ไม่มีหมายเหตุเพิ่มเติม');
+          const notifyResponse = await fetch('/api/notify', { // Assuming /api/notify is your notification endpoint
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: `[นัดหมายใหม่] โครงงาน ${projectId} - ${studentName}`,
+              messageBody: notificationMessage, // Use the constructed message as messageBody
+              email: selectedTeacher // Send the teacher's email as the recipient
+            })
+          });
+
+          if (!notifyResponse.ok) {
+            // Log warning, but don't show error to user as booking was successful
+            console.warn('การส่งแจ้งเตือนการนัดหมายล้มเหลว:', await notifyResponse.text());
+          }
+        } catch (notifyError) {
+          console.error('เกิดข้อผิดพลาดในการส่งแจ้งเตือน:', notifyError);
+        }
+        // ---- END SEND NOTIFICATION ----
       }
       
       // Update local list of appointments and refresh display for the current teacher
@@ -166,6 +212,7 @@ import { convertToDate } from '$lib/convertToDate';
       saving = false;
     }
   }
+
 </script>
 
 <div class="max-w-lg mx-auto p-6 bg-white shadow-md rounded-lg">
@@ -214,7 +261,7 @@ import { convertToDate } from '$lib/convertToDate';
             {#if currentDisplayAppointment.remarks}
               <p class="text-sm text-gray-700 mt-1"><strong>หมายเหตุจากคุณ:</strong> {currentDisplayAppointment.remarks}</p>
             {/if}
-            <p class="text-sm text-gray-600 mt-3">หากต้องการเปลี่ยนแปลง กรุณาติดต่ออาจารย์ที่ปรึกษาของท่านโดยตรง</p>
+            <p class="text-sm text-gray-600 mt-3">หากต้องการเปลี่ยนแปลง กรุณาติดต่อกรรมการ {availabilityData.usersAvailability[currentDisplayAppointment.teacherEmail]?.name || currentDisplayAppointment.teacherEmail} โดยตรง</p>
           </div>
         {:else if availabilityData.usersAvailability[selectedTeacher]?.savedSelections?.length > 0}
           <div>
@@ -225,7 +272,7 @@ import { convertToDate } from '$lib/convertToDate';
                 {@const slotObjStr = JSON.stringify(slot)} <!-- Ensure value is a string for select option -->
                 <option value={slotObjStr}>
                   {#if slot.type === 'range'}
-                    {convertToDate(slot.start).toLocaleDateString('th-TH')} {convertToDate(slot.start).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} - {convertToDate(slot.end).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+                    {convertToDate(slot.start).toLocaleDateString('th-TH')} {convertToDate(slot.start).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} - {convertToDate(slot.end).toLocaleDateString('th-TH')} {convertToDate(slot.end).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
                   {:else if slot.type === 'single'}
                     {convertToDate(slot.date).toLocaleDateString('th-TH')} {convertToDate(slot.date).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
                   {:else}
