@@ -6,7 +6,6 @@
     import { db } from '$lib/firebase'; // Import Firestore instance
     import {
         doc,
-        getDoc,
         setDoc,
         Timestamp,
     } from 'firebase/firestore';
@@ -175,13 +174,15 @@
         }
 
         const teacherName = name; // Teacher's name from component scope
-        // Attempt to get a descriptive project name, fallback to projectId
-        const projectDisplayName = projectAvailabilityData.projectNameTh || projectAvailabilityData.projectName || projectId;
-
+       
         const title = "อัปเดตตารางเวลาอาจารย์";
-        const messageBody = `อาจารย์ ${teacherName} ได้อัปเดตตารางเวลาว่างของท่านสำหรับโครงงาน '${projectDisplayName}'. นักศึกษาที่เกี่ยวข้องกับโครงงานนี้ กรุณาเข้าตรวจสอบและเลือกช่วงเวลานัดหมายใหม่อีกครั้ง (หากท่านได้เลือกไว้แล้ว การเลือกของท่านอาจมีการเปลี่ยนแปลง)`;
+        const messageBody = `อาจารย์ ${teacherName} ได้อัปเดตตารางเวลาว่างของท่าน นักศึกษาที่เกี่ยวข้องกับโครงงานนี้ กรุณาเข้าตรวจสอบและเลือกช่วงเวลานัดหมายใหม่อีกครั้ง (หากท่านได้เลือกไว้แล้ว การเลือกของท่านอาจมีการเปลี่ยนแปลง)`;
 
-
+        //console.log("Sending notification with payload:", {
+        //    title,
+        //    messageBody,
+        //    student_email
+        //});
         // Payload now only contains projectId for targeting, API will fetch emails
         const payload = { 
             title, 

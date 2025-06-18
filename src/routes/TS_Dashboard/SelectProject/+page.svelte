@@ -11,7 +11,8 @@
   import { goToProject_Details } from "$lib/NavigateWithToken";
   import { dangerToast, successToast, warningToast } from "$lib/customtoast";
   import { getCookie } from "cookies-next";
-  import Loading from "$lib/components/loading.svelte";  
+  import Loading from "$lib/components/loading.svelte";
+  import HelpModal from '$lib/components/HelpModal.svelte';
   // Initialize Firestore from your firebase config
   //const auth = getAuth();
 
@@ -28,6 +29,10 @@
   // Filter variables
   let searchQuery = "";
   let selectedTerm = null; // Will be set by the open form's term
+  
+  // Help Modal state
+  let showHelpModal = false;
+  const HELP_MODAL_STORAGE_KEY = 'selectProjectAdviserHelpShown_v3';
 
   onMount(async () => {
     try {
@@ -93,8 +98,23 @@
       dangerToast(error);
     } finally {
       loading = false;
+      // Check if help modal should be shown
+      if (typeof localStorage !== 'undefined' && !localStorage.getItem(HELP_MODAL_STORAGE_KEY)) { // Only show if key not set
+        showHelpModal = true;
+      }
     }
   });
+
+  function closeHelpModalAndMarkAsSeen() {
+    showHelpModal = false;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(HELP_MODAL_STORAGE_KEY, 'true');
+    }
+  }
+  
+  function openHelpModalManually() {
+    showHelpModal = true;
+  }
 
   // Toggle project selection
   function toggleSelect(project) {
@@ -304,10 +324,21 @@
       loading = false;
     }
   }
+
 </script>
 
 <div class="max-w-4xl mx-auto">
-  <h1 class="text-2xl font-bold mb-6">เลือกเป็นกรรมการโครงงาน</h1>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">เลือกเป็นกรรมการโครงงาน</h1>
+    <button
+      on:click={openHelpModalManually}
+      class="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+      title="แสดงคำแนะนำ"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" /></svg>
+      คำแนะนำ
+    </button>
+  </div>
 
   {#if loading}
     <div class="flex justify-center my-12">
@@ -492,3 +523,21 @@
     </div>
   {/if}
 </div>
+
+<HelpModal bind:showModal={showHelpModal} title="วิธีการใช้งานระบบนัดหมายสอบโครงงาน" onClose={() => showHelpModal = false}>
+    <h3 class="text-lg font-semibold text-blue-600 mb-2">สำหรับอาจารย์ที่ปรึกษา:</h3>
+    <p class="mb-3">
+      ท่าน<strong>ไม่จำเป็นต้อง</strong>เลือกโครงงานที่ท่านเป็น<strong>อาจารย์ที่ปรึกษา</strong>ในหน้านี้อีกครั้ง ระบบจะทราบข้อมูลของท่านจากรายละเอียดโครงงานโดยอัตโนมัติครับ
+    </p>
+    <h3 class="text-lg font-semibold text-gray-700 mb-2">หน้านี้ใช้สำหรับ:</h3>
+    <p>
+      การเลือกเป็น<strong>กรรมการสอบ</strong>ให้กับโครงงานอื่นๆ ที่ท่านสนใจ หรือโครงงานที่ท่านไม่ได้เป็นอาจารย์ที่ปรึกษา เพื่อเข้าร่วมการประเมินและให้คะแนนโครงงานเหล่านั้น
+    </p>
+
+    <div class="mt-6 text-right">
+      <button on:click={closeHelpModalAndMarkAsSeen} class="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium py-1 px-2 rounded">
+        รับทราบ ไม่ต้องแสดงอีก
+      </button>
+    </div>
+
+</HelpModal>

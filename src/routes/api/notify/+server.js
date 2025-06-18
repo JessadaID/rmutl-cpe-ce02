@@ -17,6 +17,7 @@ export async function POST({ request }) {
 
     if (email) {
       // ส่งเฉพาะผู้ใช้คนเดียว
+      console.log('ส่งคนเดียว:', email);
       const userSnapshot = await adminDb.collection("users").where("email", "==", email).limit(1).get();
       
       if (!userSnapshot.empty) {
@@ -28,6 +29,7 @@ export async function POST({ request }) {
         }
       }
     } else {
+      console.log('ส่งทุกคน:');
       // ส่งหาทุกคน
       const usersSnapshot = await adminDb.collection("users").get();
       for (const doc of usersSnapshot.docs) {

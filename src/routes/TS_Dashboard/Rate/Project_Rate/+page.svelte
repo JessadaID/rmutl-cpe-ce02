@@ -326,7 +326,7 @@
                                         class="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
                                         placeholder="0 - {MAX_SCORE}"
                                     />
-                                    <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                    <div class="absolute inset-y-0 right-5 flex items-center pr-4 pointer-events-none">
                                         <span class="text-gray-400 text-sm">/ {MAX_SCORE}</span>
                                     </div>
                                 </div>

@@ -1,8 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  // TODO: นำเข้า Firebase modules ที่จำเป็น และ db instance ของคุณ
-  // import { db } from './firebase'; // ตัวอย่าง: ปรับ đường dẫn ไปยังไฟล์ config Firebase ของคุณ
-  // import { doc, updateDoc } from 'firebase/firestore';
+  import ConfirmModal from '$lib/components/ConfirmModal.svelte';
   
   const dispatch = createEventDispatcher();
 
@@ -23,6 +21,11 @@
   let currentEditingDate = null;
   let selectedTime = { hour: '09', minute: '00' };
   let editingSelection = null; // For editing saved selections
+
+
+  //confirm Modal   
+  let  showConfirmModal = false; // Control visibility of confirm modal
+  let confirmedSelectionId = null; // ID of the selection to confirm deletion
 
   // Reactive variables
   $: monthData = getMonthData(month, year);
@@ -375,6 +378,13 @@
     const newSavedSelections = savedSelections.filter(selection => selection.id !== id);
     savedSelections = newSavedSelections; // อัปเดต local state
     dispatch('delete', { deletedId: id, savedSelections: [...newSavedSelections] }); // ส่งรายการที่อัปเดตแล้ว
+
+    showConfirmModal = false; // ปิด modal หลังจากลบ
+  }
+
+  function showModal(projectId) {
+    confirmedSelectionId = projectId;
+    showConfirmModal = true;
   }
 
   const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
@@ -511,7 +521,7 @@
                 </div>
                 <button 
                   class="text-red-500 hover:text-red-700 ml-2"
-                  on:click={() => deleteSelection(selection.id)}
+                  on:click={() => showModal(selection.id)}
                 >
                   ลบ
                 </button>
@@ -609,3 +619,14 @@
     </div>
   </div>
 {/if}
+
+<ConfirmModal
+  bind:show={showConfirmModal}
+  title="ยืนยันการลบ"
+  message="คุณแน่ใจหรือไม่ว่าต้องการลบการเลือกนี้?"
+  confirmButtonText="ยืนยัน"
+  cancelButtonText="ยกเลิก"
+  confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+  on:confirm={() => deleteSelection(confirmedSelectionId)}
+  on:cancel={() => showConfirmModal = false}
+/>

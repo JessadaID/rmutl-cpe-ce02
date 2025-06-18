@@ -1,10 +1,11 @@
 // src/routes/api/project-data/+server.js
-import {  json } from "@sveltejs/kit";
+import { json } from "@sveltejs/kit";
 import { adminDb } from "$lib/server/firebase"; 
 
-// ฟังก์ชันสำหรับ format ข้อมูลให้อยู่ในรูปแบบที่ต้องการ (ลดการทำซ้ำ)
+// ฟังก์ชันสำหรับ format ข้อมูลให้อยู่ในรูปแบบที่ต้องการ
 function formatDocData(doc) {
   const docData = doc.data();
+  
   return {
     id: doc.id,
     project_name_th: docData?.project_name_th || "",
@@ -19,70 +20,76 @@ function formatDocData(doc) {
   };
 }
 
-// GET: ดึงข้อมูลโปรเจคทั้งหมด
+// GET: ดึงข้อมูลโปรเจค
 export async function GET({ url }) {
   if (!adminDb) {
-    console.error("Firebase Admin DB not initialized. Ensure $lib/server/firebaseAdmin.js is set up correctly.");
+    console.error("Firebase Admin DB not initialized.");
     return json({ error: "Server configuration error: Firebase Admin not available." }, { status: 500 });
   }
 
   try {
-    // เพิ่มการกรองด้วย query parameters (เช่น ?term=2023)
-    const term = url.searchParams.get("term");
-    const status = url.searchParams.get("status");
-    const email = url.searchParams.get("email");
-    const projectid = url.searchParams.get("projectid");
-
+    const searchParams = url.searchParams;
+    const term = searchParams.get("term");
+    const status = searchParams.get("status");
+    const email = searchParams.get("email");
+    const projectid = searchParams.get("projectid");
+    
     const projectCollectionRef = adminDb.collection("project-approve");
-    let queryRef = projectCollectionRef; // Base query reference for Admin SDK
-    let snapshot ;
-    // Fields to select based on formatDocData function
-    // This reduces the amount of data fetched from Firestore.
+    
+    // ถ้ามี projectid ให้ดึงข้อมูล project นั้นโดยตรง
+    if (projectid) {
+      const docRef = projectCollectionRef.doc(projectid);
+      const doc = await docRef.get();
+      
+      if (!doc.exists) {
+        return json({ data: [] }, { status: 200 });
+      }
+      
+      const data = [formatDocData(doc)];
+      console.log("Fetched specific project data:", data);
+      return json({ data }, { status: 200 });
+    }
+    
+    // ถ้าไม่มี projectid ให้ดึงข้อมูลตาม query conditions
+    let queryRef = projectCollectionRef;
+    
     const fieldsToSelect = [
       'project_name_th',
-      'project_name_en',
+      'project_name_en', 
       'status',
       'members',
       'Tasks',
       'term',
       'adviser',
-      'directors'
+      'directors',
+      'email'
     ];
 
-   
-    /**
-     * ใช้สำหรับ notification
-     */
-    const select_email = ['email'];
+    // สร้าง query conditions
+    const conditions = [
+      { field: 'term', value: term },
+      { field: 'status', value: status },
+      { field: 'email', value: email }
+    ];
 
-    if (term) {
-      queryRef = queryRef.where("term", "==", term);
-    }
-    if (status) {
-      queryRef = queryRef.where("status", "==", status);
-    }
-    if (email) {
-      // Ensure an index exists in Firestore for this query if combining with other filters.
-      queryRef = queryRef.where("email", "==", email);
-    }
-    if (projectid) {
-      queryRef = queryRef.where("id", "==", projectid);
-    }
+    // Apply filters
+    conditions.forEach(condition => {
+      if (condition.value) {
+        queryRef = queryRef.where(condition.field, "==", condition.value);
+      }
+    });
 
-    // Apply select() to the query and then get the documents
-    if(!projectid){
-      snapshot = await queryRef.select(...fieldsToSelect).get();
-    }else{
-      snapshot = await queryRef.select(...select_email).get();
-    }
+    // Execute query with field selection
+    const snapshot = await queryRef.select(...fieldsToSelect).get();
     
     if (snapshot.empty) {
       return json({ data: [] }, { status: 200 });
     }
 
-    const data = snapshot.docs.map(formatDocData);
-
+    const data = snapshot.docs.map(doc => formatDocData(doc));
+    
     return json({ data }, { status: 200 });
+    
   } catch (error) {
     console.error("Error fetching projects:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to fetch project data";

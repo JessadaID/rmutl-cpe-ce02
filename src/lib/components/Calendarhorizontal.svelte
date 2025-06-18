@@ -265,9 +265,10 @@
                                 {isRangeStart(user,day) ? `${user.color}` : ''}
                                 {isRangeEnd(user,day) ? `${user.color}` : ''}
                                 ">
-                                    {#if isDateSelected(user, day)}
+                                    {#if isDateSelected(user, day) || isRangeEnd(user, day) || isRangeStart(user, day)}
                                         <span class="w-full h-full flex items-center justify-center">✓</span>
                                     {/if}
+                                  
                                 </td>
                             {/each}
                         </tr>

@@ -82,7 +82,6 @@
         unsubscribeFromAvailabilityUpdates = availabilitySignature.subscribe(($signature) => {
            
             if ($signature > 0 && projectId === $page.params.id) {
-                console.log('Availability signature changed, reloading layout data for Calendarhorizontal.');
                 reloadAndProcessLayoutData();
             }
         });

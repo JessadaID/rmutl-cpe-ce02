@@ -2,7 +2,7 @@
     export let project ;
     export let form_data ;
 
-    const MAX_SCORE = (form_data.find(form => form.isOpen === true)).directorScoreLimit;
+    const MAX_SCORE = (form_data.find(form => form.term === project.term)).directorScoreLimit;
 </script>
 
 <div class="bg-white shadow-lg rounded-lg p-6">
