@@ -3,7 +3,6 @@
 
   import { goto } from "$app/navigation";
   import { createJWT } from "$lib/jwt.ts";
-  import { fade } from 'svelte/transition'; // Import fade transition
   import { getAuth } from "firebase/auth";
   import { warningToast } from "$lib/customtoast.js";
 
@@ -12,19 +11,20 @@
   async function navigateWithToken(term) {
     const auth = getAuth();
     if (!auth.currentUser) {
- warningToast('กรุณาเข้าสู่ระบบเพื่อดำเนินการ');
+      warningToast('กรุณาเข้าสู่ระบบเพื่อดำเนินการ');
       return;
     }
- try {
- const payload = { term };
- const token = await createJWT(payload);
- //console.log('Token:', token);
- goto(`/cpe02/form?token=${token}`);
- } catch (err) {
-			console.error('Error creating JWT:', err);
-			// Handle error appropriately, e.g., display an error message to the user
-		}
-	}
+
+    try {
+      const payload = { term };
+      const token = await createJWT(payload);
+      //console.log('Token:', token);
+      goto(`/cpe02/form?token=${token}`);
+    } catch (err) {
+        console.error('Error creating JWT:', err);
+        // Handle error appropriately, e.g., display an error message to the user
+      }
+    }
 </script>
 
 <svelte:head>

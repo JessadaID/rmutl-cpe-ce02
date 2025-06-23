@@ -14,7 +14,6 @@
 	import { startProgress, doneProgress } from '$lib/progress';
 	import { onDestroy } from 'svelte';
 
-
 	let isLoggedIn = false;
 	let currentUser = null;
 	let isMenuOpen = false;
@@ -42,7 +41,7 @@
 		if (role === 'admin') {
 			return [
 				{ id: '/cpe02', label: 'หน้าแรก', icon: 'home' },
-				{ id: '/cpe02/data', label: 'ดูข้อมูล', icon: 'database' },
+				{ id: '/cpe02/data', label: 'ดูข้อมูลโครงงาน', icon: 'database' },
 				{ id: '/TS_Dashboard', label: 'แดชบอร์ดอาจารย์', icon: 'clipboard-list' },
 				{ id: '/Dashboard', label: 'แดชบอร์ด', icon: 'chart-pie' } // Consider renaming if confusing
 			];
@@ -50,7 +49,7 @@
 		} else if (role === 'subject_teacher' || role === 'teacher') {
 			return [
 				{ id: '/cpe02', label: 'หน้าแรก', icon: 'home' },
-				{ id: '/cpe02/data', label: 'ดูข้อมูล', icon: 'database' },
+				{ id: '/cpe02/data', label: 'ดูข้อมูลโครงงาน', icon: 'database' },
 				{ id: '/TS_Dashboard', label: 'แดชบอร์ด', icon: 'clipboard-list' } // Simplified label
 			];
 			// Students/Others: Form filling and data view
@@ -58,7 +57,7 @@
 			return [
 				{ id: '/cpe02', label: 'หน้าแรก', icon: 'home' },
 				{ id: '/cpe02#form-title', label: 'กรอกแบบฟอร์ม', icon: 'pencil-alt' }, // Changed order, more logical flow
-				{ id: '/cpe02/data', label: 'ดูข้อมูล', icon: 'database' }
+				{ id: '/cpe02/data', label: 'ดูข้อมูลโครงงาน', icon: 'database' }
 			];
 		}
 	};
@@ -442,3 +441,9 @@
 <main >
 	<slot />
 </main>
+
+<style>
+	:global(html) {
+		scroll-behavior: smooth;
+	}
+</style>

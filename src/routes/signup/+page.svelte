@@ -83,13 +83,16 @@
 			const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 			const user = userCredential.user;
 
+			if (user) {
+				const userDocRef = doc(db, 'users', user.uid);
+				await setDoc(userDocRef, {
+					email: user.email,
+					role: assignedRole, // บันทึก Role ที่กำหนด
+					name: name
+				});
+			}
 			// บันทึกข้อมูลผู้ใช้ลงใน Firestore
-			const userDocRef = doc(db, 'users', user.uid);
-			await setDoc(userDocRef, {
-				email: user.email,
-				role: assignedRole, // บันทึก Role ที่กำหนด
-				name: name
-			});
+			
 
 			// เก็บข้อมูลใน Cookies (ทำหลังจากทุกอย่างสำเร็จ) โดยใช้ role ที่กำหนด
 			setLoginCookies(email, role, name);

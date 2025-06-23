@@ -4,7 +4,6 @@
     import { goto } from '$app/navigation';    
     import { auth } from '$lib/firebase';
     import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-    import { toast } from '@zerodevx/svelte-toast';
   import { dangerToast, successToast, warningToast } from '$lib/customtoast';
 
     let currentPassword = '';
@@ -35,9 +34,9 @@
     const handleChangePassword = async () => {
         // errorMessage = '';
         
-        if (newPassword.length < 8) {
-            // errorMessage = 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร';
-            warningToast('รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร');
+        if (newPassword.length < 6) {
+            // Firebase's default minimum is 6 characters
+            warningToast('รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร');
             return;
         }
 
@@ -50,6 +49,12 @@
         if (!user) {
             // = 'ไม่พบผู้ใช้งานที่ล็อกอินอยู่';
             dangerToast('ไม่พบผู้ใช้งานที่ล็อกอินอยู่');
+            return;
+        }
+
+        if (!user.email) {
+            dangerToast('ไม่พบอีเมลของผู้ใช้ปัจจุบัน ไม่สามารถดำเนินการต่อได้');
+            isLoading = false;
             return;
         }
 
@@ -66,12 +71,30 @@
             newPassword = '';
             confirmPassword = '';
         } catch (error: any) {
-            if (error.code === 'auth/wrong-password') {
-                dangerToast("รหัสผ่านปัจจุบันไม่ถูกต้อง");
-                //errorMessage = 'รหัสผ่านปัจจุบันไม่ถูกต้อง';
-            } else {
-                dangerToast('ไม่สามารถอัพเดทรหัสผ่านได้ กรุณาลองใหม่อีกครั้ง ' +error)
-            }
+			let errorMessage = 'เกิดข้อผิดพลาดที่ไม่รู้จัก กรุณาลองใหม่อีกครั้ง';
+			console.error('Password Change Error:', error); // Log the original error for debugging
+
+			switch (error.code) {
+				case 'auth/wrong-password':
+				case 'auth/invalid-credential': // This can also indicate a wrong password
+					errorMessage = 'รหัสผ่านปัจจุบันไม่ถูกต้อง';
+					break;
+				case 'auth/weak-password':
+					errorMessage = 'รหัสผ่านใหม่ไม่รัดกุม ต้องมีความยาวอย่างน้อย 6 ตัวอักษร';
+					break;
+				case 'auth/too-many-requests':
+					errorMessage = 'ตรวจพบกิจกรรมที่น่าสงสัย บัญชีของคุณถูกระงับชั่วคราว กรุณาลองใหม่อีกครั้งในภายหลัง';
+					break;
+				case 'auth/network-request-failed':
+					errorMessage = 'เกิดปัญหาเกี่ยวกับเครือข่าย กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตของคุณ';
+					break;
+                case 'auth/requires-recent-login':
+                    errorMessage = 'เพื่อความปลอดภัย กรุณาออกจากระบบและเข้าสู่ระบบอีกครั้งก่อนเปลี่ยนรหัสผ่าน';
+                    break;
+				default: // For other unexpected errors
+					errorMessage = 'ไม่สามารถอัปเดตรหัสผ่านได้ กรุณาติดต่อผู้ดูแลระบบ';
+			}
+			dangerToast(errorMessage);
         } finally {
             isLoading = false;
         }
@@ -151,7 +174,7 @@
                     </button>
                 </div>
                 <p class="text-sm text-gray-600 mt-1">
-                    รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร
+                    รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร
                 </p>
             </div>
 

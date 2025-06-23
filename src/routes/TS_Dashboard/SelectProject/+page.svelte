@@ -188,10 +188,10 @@
 
   // Save selected projects to user's data and update project directors
   async function saveSelection() {
-    if (selectedProjects.length === 0) {
-      warningToast("กรุณาเลือกโครงงานอย่างน้อย 1 โครงงาน");
-      return;
-    }
+    //if (selectedProjects.length === 0) {
+    //  warningToast("กรุณาเลือกโครงงานอย่างน้อย 1 โครงงาน");
+    //  return;
+    //}
 
     // Check against projectLimit
     if (projectLimit !== null && selectedProjects.length > projectLimit) {
@@ -224,6 +224,7 @@
 
         if (!projectDoc.exists()) {
           console.warn(`Project with ID ${project.id} not found in project-approve. Skipping director update.`);
+          // ถ้าไม่พบ project ใน project-approve ให้ข้ามการอัปเดตกรรมการ
           // ไม่ throw error ทันที แต่อาจจะ log หรือจัดการตามความเหมาะสม
         } else {
           const currentData = projectDoc.data();
