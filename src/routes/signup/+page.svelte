@@ -32,7 +32,7 @@
 			}**/
 			
 			try {
-				const respond = await fetch('/api/teachers');
+				const respond = await fetch('/api/teacher-data');
 				const data = await respond.json();
 				teachers = data.data;
 				// console.log('Fetched teachers:', teachers);
