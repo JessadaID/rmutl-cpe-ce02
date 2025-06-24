@@ -249,6 +249,7 @@
   
         try {
           const docRef = doc(db, "project-approve", id);
+          const docRefavailability = doc(db, "project-availability", id);
           const docSnap = await getDoc(docRef); // Re-fetch just before delete is safer
   
           if (docSnap.exists()) {
@@ -281,7 +282,7 @@
   
             // Delete the project document from Firestore
             await deleteDoc(docRef);
-  
+            await deleteDoc(docRefavailability); // Delete availability document if it exists
             successToast("ลบข้อมูลโครงงานและรูปภาพเรียบร้อยแล้ว!");
             goto(`/cpe02/data`); // Navigate back to the list page
           } else {
