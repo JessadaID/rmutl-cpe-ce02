@@ -3,7 +3,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { slide, fade } from 'svelte/transition';
 	const dispatch = createEventDispatcher();
-
+	 import { goto } from '$app/navigation';
 	let selectedItemId = '';
 
 	// --- State ---
@@ -24,6 +24,12 @@
 	function handleItemClick(item) {
 		selectedItemId = item.id;
 		dispatch('itemclick', item);
+
+		// <-- เพิ่มโค้ดส่วนนี้เพื่อจัดการ Routing
+        if (selectedItemId) {
+            goto(selectedItemId, { relative: true }); // ใช้ relative: true เพื่อให้เป็นการ route แบบ relative
+        }
+
 		// On mobile (screens smaller than lg breakpoint), close the sidebar after selection for better UX.
 		if (typeof window !== 'undefined' && window.innerWidth < 1024) {
 			isOpen = false;
