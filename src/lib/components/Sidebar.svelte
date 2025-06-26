@@ -1,37 +1,54 @@
 <!-- src/lib/components/Sidebar.svelte -->
 <script>
-	import { goto } from '$app/navigation';
-	import { slide } from 'svelte/transition';
+	import { createEventDispatcher } from 'svelte';
+	import { slide, fade } from 'svelte/transition';
+	const dispatch = createEventDispatcher();
 
 	let selectedItemId = '';
 
 	// --- State ---
-	let isOpen = true;
+	// The sidebar's open/closed state. Exported to be controlled by a parent component.
+	// Defaults to `false` for a mobile-first approach.
+	export let isOpen = false;
 
 	// Menu items
 	export let menuItems = [];
 	export let title = '';
+
 	// --- Functions ---
-	function toggleSidebar() {
+	// Toggles the sidebar state. Exported for parent component use (e.g., a hamburger button).
+	export function toggleSidebar() {
 		isOpen = !isOpen;
 	}
 
-	function selectMenuItem(item ) {
+	function handleItemClick(item) {
 		selectedItemId = item.id;
-		goto(`/TS_Dashboard/${item.id}`);
+		dispatch('itemclick', item);
+		// On mobile (screens smaller than lg breakpoint), close the sidebar after selection for better UX.
+		if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+			isOpen = false;
+		}
 	}
 </script>
 
+<!-- Backdrop for mobile overlay. Closes the sidebar when clicked. -->
+{#if isOpen}
+	<div
+		class="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm lg:hidden"
+		on:click={toggleSidebar}
+		transition:fade={{ duration: 200 }}
+		aria-hidden="true"
+	/>
+{/if}
+
 <!-- Sidebar Container -->
-<div class={`
-	transition-all duration-300 ease-out
-	${isOpen ? 'w-64' : 'w-16'} 
-	bg-white/95 backdrop-blur-sm
-	text-gray-800 
-	relative flex flex-col h-full 
-	border-r border-gray-200/60
-	shadow-xl shadow-gray-100/50
-`}>
+<div
+	class="fixed inset-y-0 left-0 z-40 flex h-full w-64 flex-col border-r border-gray-200/60 bg-white/95 text-gray-800 shadow-xl shadow-gray-100/50 transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:transition-all"
+	class:translate-x-0={isOpen}
+	class:-translate-x-full={!isOpen}
+	class:lg:w-64={isOpen}
+	class:lg:w-16={!isOpen}
+>
 	<!-- Header Section -->
 	{#if isOpen}
 		<div class="px-6 py-5 border-b border-gray-100" transition:slide={{ duration: 200 }}>
@@ -41,19 +58,9 @@
 	{/if}
 
 	<!-- Toggle Button -->
+	<!-- This button is only visible on large screens to collapse/expand the sidebar -->
 	<button
-		class="
-			absolute -right-3 top-6 z-20 
-			w-6 h-6 
-			bg-white 
-			border border-gray-200
-			text-gray-600 
-			hover:text-gray-900 hover:bg-gray-50
-			focus:outline-none focus:ring-2 focus:ring-blue-500/20
-			transition-all duration-200
-			shadow-md hover:shadow-lg
-			flex items-center justify-center
-		"
+		class="absolute -right-3 top-6 z-20 hidden h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-md transition-all duration-200 hover:shadow-lg hover:text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 lg:flex"
 		on:click={toggleSidebar}
 		aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
 	>
@@ -75,12 +82,12 @@
 		<nav class="space-y-2">
 			{#each menuItems as item (item.id)}
 				{#if item.id == 'sprade_teacher'}
-					<div class="relative flex items-center justify-center my-4">
+					<div class="relative flex items-center justify-center my-4 {isOpen == false ? 'hidden' : ''}">
 						<div class="absolute inset-x-0 top-1/2 h-0.5 bg-gray-300 -translate-y-1/2"></div>
 						<span class="relative z-10 px-2 bg-white text-sm text-gray-500">ส่วนของอาจารย์</span>
 					</div>
 				{:else if item.id == "sprade_subject_teacher"}
-					<div class="relative flex items-center justify-center my-4">
+					<div class="relative flex items-center justify-center my-4 {isOpen == false ? 'hidden' : ''}">
 						<div class="absolute inset-x-0 top-1/2 h-0.5 bg-gray-300 -translate-y-1/2"></div>
 						<span class="relative z-10 px-2 bg-white text-sm text-gray-500">ส่วนของอาจารย์ประจำวิชา</span>
 					</div>
@@ -89,8 +96,7 @@
 				<button
 					class={`
 						w-full flex items-center 
-						${isOpen ? 'px-4 py-3' : 'px-2 py-3 justify-center'}
-						
+						${isOpen ? 'px-4 py-3' : 'justify-center px-2 py-3'}
 						transition-all duration-200 
 						group font-medium text-sm
 						relative overflow-hidden
@@ -98,7 +104,7 @@
 							? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100'
 							: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}
 					`}
-					on:click={() => selectMenuItem(item)}
+					on:click={() => handleItemClick(item)}
 					aria-current={isActive ? 'page' : undefined}
 				>
 					<!-- Active indicator -->

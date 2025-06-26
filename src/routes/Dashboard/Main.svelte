@@ -157,7 +157,7 @@
               <h3 class="font-medium text-blue-600 hover:underline">{project.project_name_th || 'ไม่มีชื่อโครงงาน'}</h3>
               <p class="text-sm text-gray-600">
                 {#if project.members && project.members.length > 0}
-                  โดย: {project.members.join(', ')}
+                  โดย: {project.members[0]}
                 {:else}
                   ผู้เสนอ: ไม่ระบุ
                 {/if}

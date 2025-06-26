@@ -317,17 +317,16 @@
       </a>
     </div>
   {:else if project}
-    <div class="container mx-auto px-4 pb-20 pt-6 w-full h-full bg-gray-100">
+    <div class="container mx-auto w-full min-h-screen bg-gray-100 px-4 pb-20 pt-6">
       
       <!-- Main Content Grid -->
       <div class="md:flex md:gap-8 ">
   
         <!-- Left Column: Project Details -->
           <div class="{showTask ? 'md:w-7/12 lg:w-8/12' : 'md:w-10/12 lg:w-8/12 mx-auto'} mb-8 md:mb-0 ">
-             <!-- Main Navigation Tabs -->
-     
+             <!-- Main Navigation Tabs -->     
             <div class="px-6 py-0  bg-white">
-              <div class="flex border-b border-gray-200">
+              <div class="flex overflow-x-auto overflow-y-hidden border-b border-gray-200">
                 <button
                   on:click={() => selectVersion("current")}
 
@@ -351,7 +350,7 @@
               </div>
             </div>
 
-            <div class="bg-white shadow-lg rounded-b-lg p-6 sm:p-8 h-full"> <!-- Consider adding h-full if content height varies -->
+            <div class="h-full rounded-b-lg bg-white p-4 shadow-lg sm:p-6 md:p-8"> <!-- Consider adding h-full if content height varies -->
 
               
               <!-- Project Title -->
@@ -461,7 +460,7 @@
                               
                               {#each project.Operation_Schedule.monthLabels as month,i}
                               <td class="border-b border-l border-gray-300 p-0 text-center h-full">
-                                  <div class="h-full w-full py-3" style:background-color={activity.months[i] ? activity.color : 'transparent'}>&nbsp;</div>
+                                  <div class="h-full w-full py-3 " style:background-color={activity.months[i] ? activity.color : 'transparent'}>&nbsp;</div>
                                 </td>
                               {/each}
                           </tr>
@@ -541,8 +540,8 @@
               {#if shouldShowProcessComponent && canViewDirectorScores}
                 <!-- Both views available, show tabs -->
                 <div class="bg-white shadow-lg rounded-lg">
-                  <div class="px-6 pt-6 pb-0">
-                    <div class="flex border-b border-gray-200">
+                  <div class="px-4 pt-6 pb-0 sm:px-6">
+                    <div class="flex overflow-x-auto border-b border-gray-200">
                       <button
                         on:click={() => activeTaskView = 'process'}
                         class="py-3 px-4 -mb-px font-medium text-sm focus:outline-none whitespace-nowrap {activeTaskView === 'process' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-indigo-500 border-b-2 border-transparent hover:border-gray-300'}"
