@@ -107,7 +107,7 @@
     {#if isLoading}
     <Loading/>
     {:else}
-      <div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div class="h-[calc(100vh-4rem)] bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden">
           <!-- Header -->
           <div class="bg-indigo-600 p-6">

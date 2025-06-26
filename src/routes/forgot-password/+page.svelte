@@ -47,7 +47,7 @@
 </svelte:head>
 
 <!-- ใช้ flexbox จัดกึ่งกลางแนวตั้งและแนวนอนเต็มหน้าจอ -->
-<div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 px-4">
+<div class="flex items-center justify-center h-[calc(100vh-4rem)] bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 px-4">
 	<!-- การ์ดฟอร์ม -->
 	<div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
 		<h2 class="text-3xl font-bold text-center text-gray-800">ลืมรหัสผ่าน?</h2>

@@ -128,93 +128,146 @@
 <svelte:head>
   <title>เข้าสู่ระบบ</title>
   <meta name="description" content="เข้าสู่ระบบเพื่อเข้าถึงฟีเจอร์ทั้งหมด" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="/favicon.ico" />
 </svelte:head>
 
-<div class="flex justify-center items-center min-h-screen">
-  <div class="flex w-full max-w-4xl rounded-lg overflow-hidden relative" style="box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);">
-    <div class="hidden md:block w-1/2 relative" >
+<div class="flex justify-center items-center h-[calc(100vh-4rem)] px-4 py-8 sm:px-6 lg:px-8">
+  <div class="flex flex-col lg:flex-row w-full max-w-4xl rounded-lg overflow-hidden shadow-2xl bg-white">
+    <!-- Image Section - Hidden on small screens, shown on large screens -->
+    <div class="hidden lg:block lg:w-1/2 relative">
       <img
         src="/Sign_in.jpg"
         alt="Login Background"
         class="w-full h-full object-cover"
       />
-      <div
-        class="absolute bottom-0 left-0 bg-white/80 p-4"
-      >
-
+      <div class="absolute bottom-0 left-0  bg-white/80 from-slate-500 p-4  rounded-tr-xl">
         <p class="text-sm text-gray-500">
-          ยังไม่มีบัญชีหรอ ? <a
-            href="/signup"
-            class="text-blue-500 hover:underline font-bold">สมัครสมาชิก</a
-          >
+          ยังไม่มีบัญชีหรอ ? 
+          <a href="/signup" class="text-blue-500 hover:text-blue-600 hover:underline font-bold">
+            สมัครสมาชิก
+          </a>
         </p>
       </div>
     </div>
-    <div
-      class="w-full md:w-1/2 flex items-center justify-center p-6 bg-white/60 backdrop-blur-md"
-    >
-      <div class="w-full max-w-md">
-        <h1 class="text-xl font-bold mb-5 text-center">เข้าสู่ระบบ</h1>
+
+    <!-- Form Section -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-white">
+      <div class="w-full max-w-md space-y-6">
+        <!-- Header -->
+        <div class="text-center">
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">เข้าสู่ระบบ</h1>
+          <p class="text-sm text-gray-600">เข้าสู่ระบบเพื่อเข้าถึงฟีเจอร์ทั้งหมด</p>
+        </div>
+
         {#if loading}
-          <p class="text-center text-gray-500">กำลังโหลด...</p>
+          <div class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+            <p class="text-gray-600">กำลังโหลด...</p>
+          </div>
         {:else if !user}
-          <form on:submit|preventDefault={login} class="space-y-4">
-            <div>
-              <label
-                for="email"
-                class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label
-              >
+          <form on:submit|preventDefault={login} class="space-y-5">
+            <!-- Email Field -->
+            <div class="space-y-2">
+              <label for="email" class="block text-sm font-medium text-gray-700">
+                อีเมล
+              </label>
               <input
                 id="email"
                 type="email"
                 bind:value={email}
                 on:blur={validateEmail}
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300 {emailError ? 'border-red-500' : ''}"
+                class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 {emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'}"
+                placeholder="กรอกอีเมลของคุณ"
+                autocomplete="email"
               />
               {#if emailError}
-                <p class="text-red-500 text-xs mt-1">{emailError}</p>
+                <p class="text-red-500 text-sm flex items-center">
+                  <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                  {emailError}
+                </p>
               {/if}
             </div>
-            <div>
-              <label
-                for="password"
-                class="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label
-              >
+
+            <!-- Password Field -->
+            <div class="space-y-2">
+              <label for="password" class="block text-sm font-medium text-gray-700">
+                รหัสผ่าน
+              </label>
               <input
                 id="password"
                 type="password"
                 bind:value={password}
                 on:blur={validatePassword}
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300 {passwordError ? 'border-red-500' : ''}"
+                class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 {passwordError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'}"
+                placeholder="กรอกรหัสผ่านของคุณ"
+                autocomplete="current-password"
               />
               {#if passwordError}
-                <p class="text-red-500 text-xs mt-1">{passwordError}</p>
+                <p class="text-red-500 text-sm flex items-center">
+                  <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                  {passwordError}
+                </p>
               {/if}
-              <!-- เพิ่มลิงก์ลืมรหัสผ่าน -->
-              <div class="flex justify-end mt-1">
-                <a href="/forgot-password" class="text-sm text-blue-500 hover:underline">ลืมรหัสผ่าน?</a>
+              
+              <!-- Forgot Password Link -->
+              <div class="flex justify-end">
+                <a 
+                  href="/forgot-password" 
+                  class="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-200"
+                >
+                  ลืมรหัสผ่าน?
+                </a>
               </div>
             </div>
+
+            <!-- Submit Button -->
             <button
               type="submit"
-              class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
+              disabled={loading}
+              class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              เข้าสู่ระบบ
+              {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
             </button>
           </form>
+
+          <!-- Mobile Sign Up Link -->
+          <div class="lg:hidden text-center pt-4 border-t border-gray-200">
+            <p class="text-sm text-gray-600">
+              ยังไม่มีบัญชีหรอ ? 
+              <a href="/signup" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                สมัครสมาชิก
+              </a>
+            </p>
+          </div>
         {:else}
-        <center>
-          <p class="text-xl">Redirect in <b>{countdown}</b></p>
-          <p class="text-l pt-2">ยินดีต้อนรับ <b>{email}</b></p>
-        </center>
+          <!-- Success State -->
+          <div class="text-center py-8 space-y-4">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+              <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-semibold text-gray-900">เข้าสู่ระบบสำเร็จ!</h2>
+            <p class="text-lg text-gray-600">
+              เปลี่ยนหน้าใน <span class="font-bold text-blue-600 text-xl">{countdown}</span> วินาที
+            </p>
+            <p class="text-base text-gray-700">
+              ยินดีต้อนรับ <span class="font-semibold text-blue-600">{email}</span>
+            </p>
+          </div>
         {/if}
       </div>
     </div>
   </div>
- </div>
+</div>
 
-<div class="custom-shape-divider-bottom-1737443007 hidden md:block">
+<!-- Background Shapes - Only visible on larger screens -->
+<div class="custom-shape-divider-bottom-1737443007 hidden lg:block">
   <svg
     data-name="Layer 1"
     xmlns="http://www.w3.org/2000/svg"
@@ -252,13 +305,14 @@
     position: relative;
     display: block;
     width: calc(300% + 1.3px);
-    height: 369px;
+    height: 300px;
     transform: rotateY(180deg);
   }
 
   .custom-shape-divider-bottom-1737443007 .shape-fill {
     fill: #a1cae2;
   }
+  
   .custom-shape-divider-bottom-1737647643 {
     position: fixed;
     bottom: 0;
@@ -274,10 +328,22 @@
     position: relative;
     display: block;
     width: calc(100% + 1.3px);
-    height: 112px;
+    height: 80px;
   }
 
   .custom-shape-divider-bottom-1737647643 .shape-fill {
     fill: #7fa0b3;
+  }
+
+  @media (max-width: 1024px) {
+    .custom-shape-divider-bottom-1737647643 svg {
+      height: 60px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .custom-shape-divider-bottom-1737647643 svg {
+      height: 40px;
+    }
   }
 </style>

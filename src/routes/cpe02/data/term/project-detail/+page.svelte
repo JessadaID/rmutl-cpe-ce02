@@ -536,12 +536,12 @@
         {#if showTask}
           <!-- Right Column: Process Component and/or Director Scores with Fixed Sticky Positioning -->
           <div class="md:w-5/12 lg:w-4/12">
-            <div class="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-auto">
+            <div class="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-hidden">
               {#if shouldShowProcessComponent && canViewDirectorScores}
                 <!-- Both views available, show tabs -->
                 <div class="bg-white shadow-lg rounded-lg">
                   <div class="px-4 pt-6 pb-0 sm:px-6">
-                    <div class="flex overflow-x-auto border-b border-gray-200">
+                    <div class="flex border-b border-gray-200">
                       <button
                         on:click={() => activeTaskView = 'process'}
                         class="py-3 px-4 -mb-px font-medium text-sm focus:outline-none whitespace-nowrap {activeTaskView === 'process' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-indigo-500 border-b-2 border-transparent hover:border-gray-300'}"
