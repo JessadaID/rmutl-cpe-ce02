@@ -4,7 +4,7 @@
   import { doc, getDoc } from "firebase/firestore";
   import { goto } from "$app/navigation";
   import { setLoginCookies, clearLoginCookies} from "$lib/auth";
-  import { dangerToast, warningToast } from "$lib/customtoast";
+  import { dangerToast } from "$lib/customtoast";
   import { onMount } from "svelte";
   import Loading from "$lib/components/loading.svelte";
 
