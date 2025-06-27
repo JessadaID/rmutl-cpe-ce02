@@ -26,7 +26,7 @@ export async function GET({ params }) {
 export async function PUT ({ params, request }) {
   try {
     let id = params.id; // Assuming the ID is passed as a parameter in the URL
-
+    
     if (!id) {
       return json({ error: "ID parameter is required" }, { status: 400 });
     }
