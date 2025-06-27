@@ -52,7 +52,7 @@
 	<div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
 		<h2 class="text-3xl font-bold text-center text-gray-800">ลืมรหัสผ่าน?</h2>
 		<p class="text-center text-gray-600">
-			กรอกอีเมลของคุณด้านล่าง เราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปให้
+			กรอกอีเมลของคุณด้านล่าง และเราจะส่งอีเมลให้คุณเพื่อรีเซ็ตรหัสผ่าน
 		</p>
 
 		<!-- {#if message}

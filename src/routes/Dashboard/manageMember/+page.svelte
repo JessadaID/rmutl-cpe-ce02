@@ -45,12 +45,8 @@
     let q;
 
     let filters = [];
-    // Search by email (case-insensitive prefix search)
+    
     if (search) {
-        // Firestore doesn't support case-insensitive directly well with range queries.
-        // A common workaround is to store a lowercase version of the field.
-        // Assuming 'email' is stored as is, this will be case-sensitive prefix search.
-        // For a more robust search, consider backend functions or third-party search services (like Algolia).
         filters.push(where("email", ">=", search));
         filters.push(where("email", "<=", search + "\uf8ff"));
     }
