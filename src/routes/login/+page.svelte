@@ -6,6 +6,7 @@
   import { setLoginCookies, clearLoginCookies} from "$lib/auth";
   import { dangerToast, warningToast } from "$lib/customtoast";
   import { onMount } from "svelte";
+  import Loading from "$lib/components/loading.svelte";
 
   let email = "";
   let password = "";
@@ -161,10 +162,7 @@
         </div>
 
         {#if loading}
-          <div class="text-center py-8">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
-            <p class="text-gray-600">กำลังโหลด...</p>
-          </div>
+          <Loading />
         {:else if !user}
           <form on:submit|preventDefault={login} class="space-y-5">
             <!-- Email Field -->

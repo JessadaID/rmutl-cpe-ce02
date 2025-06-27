@@ -105,7 +105,7 @@
   
   {#if isAuthenticated}
     {#if isLoading}
-    <Loading/>
+    <div class="flex items-center justify-center h-64"> <Loading /></div>
     {:else}
       <div class="h-[calc(100vh-4rem)] bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden">
