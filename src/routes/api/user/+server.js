@@ -1,32 +1,28 @@
 import { json } from "@sveltejs/kit";
 import { adminDb } from "$lib/server/firebase";
-// API GET: ดึงข้อมูลผู้ใช้
+// API GET: ดึงข้อมูลผู้ใช้ทั้งหมด
 
 export async function GET({ url }) {
   try {
-    const roleQueryParam = url.searchParams.get('role');
-    console.log("Received role query param:", roleQueryParam);
+    let email = url.searchParams.get('email') || '';
+    let page = parseInt(url.searchParams.get('page')) || 1;
+    let limit = parseInt(url.searchParams.get('limit')) || 10;
+    let role = url.searchParams.get('role') || '';
+    let q = adminDb.collection('users');  
 
-    let q = adminDb.collection('users');
-    let rolesToFilter = [];
-
-    if (roleQueryParam) {
-      if (roleQueryParam.toLowerCase() === 'teachersubject_teacher') {
-        rolesToFilter = ['teacher', 'subject_teacher'];
-      } else {
-        // If the param is not the special 'teachersubject_teacher' string,
-        // treat it as a single role to filter by.
-        rolesToFilter = [roleQueryParam];
-      }
+    if (email) {
+      q = q.where('email', '>=', email.toLowerCase());
+      q = q.where('email', '<=', email.toLowerCase() + '\uf8ff');
+    }
+    if (page && limit) {
+      const startAt = (page - 1) * limit;
+      q = q.orderBy('email').offset(startAt).limit(limit);
+    }
+    if (role) {
+      q = q.where('role', '==', role);
     }
 
-    if (rolesToFilter.length > 0) {
-      q = q.where('role', 'in', rolesToFilter).select('email', 'name', 'role');
-      console.log("Applying Firestore filter for roles:", rolesToFilter);
-    } else {
-      console.log("No role filter applied, fetching all users.");
-    }
-
+  
     const querySnapshot = await q.get();
     const users = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 

@@ -21,7 +21,7 @@
         try {
             
             // Fetch form data and find the open form
-            const formRes = await fetch(`../../api/form-data?isOpen=true`);
+            const formRes = await fetch(`/api/form-data?isOpen=true`);
             const formDataResponse = await formRes.json();
             if (!formRes.ok) {
                 throw new Error(formDataResponse.error || "ไม่สามารถโหลดข้อมูลฟอร์มได้");

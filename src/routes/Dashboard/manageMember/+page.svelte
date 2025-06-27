@@ -1,25 +1,14 @@
 <script>
   import { onMount } from "svelte";
-  import {
-    collection,
-    getDocs,
-    query,
-    where,
-    limit,
-    startAfter,
-    doc, // Import doc
-    updateDoc, // Import updateDoc
-  } from "firebase/firestore";
-  import { db } from "$lib/firebase";
   import { successToast, dangerToast } from "$lib/customtoast"; // Import toasts
   import { getrolename } from "$lib/Getrolename";
+  import Loading from "$lib/components/loading.svelte";
 
   let members = [];
   let currentPage = 1;
   let pageSize = 10;
   let searchQuery = "";
   let selectedRoleFilter = "";
-  let lastVisible = null;
   let isLoading = false;
   let noDataFound = false;
   let savingStates = {}; 
@@ -37,54 +26,41 @@
     savingStates = {}; // Reset saving states on load
 
     if (resetPagination) {
-      lastVisible = null;
+      // lastVisible is not needed with API pagination
       currentPage = 1;
     }
 
-    const usersCollection = collection(db, "users");
-    let q;
+    let url = `/api/user?page=${page}&limit=${pageSize}`;
 
-    let filters = [];
-    // Search by email (case-insensitive prefix search)
     if (search) {
-        // Firestore doesn't support case-insensitive directly well with range queries.
-        // A common workaround is to store a lowercase version of the field.
-        // Assuming 'email' is stored as is, this will be case-sensitive prefix search.
-        // For a more robust search, consider backend functions or third-party search services (like Algolia).
-        filters.push(where("email", ">=", search));
-        filters.push(where("email", "<=", search + "\uf8ff"));
+      url += `&email=${encodeURIComponent(search)}`;
     }
-    if (roleFilter) { // Use the renamed variable
-      filters.push(where("role", "==", roleFilter));
+    if (roleFilter) {
+      url += `&role=${encodeURIComponent(roleFilter)}`;
     }
-
-    // Build the query
-    const queryConstraints = [
-        ...filters,
-        ...(lastVisible && !resetPagination ? [startAfter(lastVisible)] : []), // Apply startAfter only if not resetting and lastVisible exists
-        limit(pageSize)
-    ];
-
-    q = query(usersCollection, ...queryConstraints);
 
     try {
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty && page === 1) {
-            noDataFound = true;
-            members = [];
-        } else {
-            members = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-            if (snapshot.docs.length > 0) {
-                // Update lastVisible only if we are moving forward or on the first page load
-                 if (!lastVisible || resetPagination || snapshot.docs.length === pageSize) {
-                    lastVisible = snapshot.docs[snapshot.docs.length - 1];
-                 }
-            } else {
-                
-            }
-        }
-        currentPage = page;
+      const response = await fetch(url);
+      //console.log(await response.json()) // Log the response for debugging
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.data && Array.isArray(data.data)) {
+        members = data.data.map(member => ({
+          id: member.id, // Assuming uid is the document ID
+          email: member.email,
+          name: member.name,
+          fcmToken: member.fcmToken,
+          role: member.role
+        }));
+        noDataFound = members.length === 0 && page === 1;
+      } else {
+        members = [];
+        noDataFound = true;
+      }
+      currentPage = page;
 
     } catch (error) {
         console.error("Error loading members:", error);
@@ -102,7 +78,7 @@
 
   async function nextPage() {
     if (!isLoading && members.length === pageSize) { // Only allow next if the current page was full
-      await loadMembers(currentPage + 1, searchQuery, selectedRoleFilter);
+      await loadMembers(currentPage + 1, searchQuery, selectedRoleFilter, false);
     }
   }
 
@@ -120,13 +96,22 @@
   async function saveRole(memberId, newRole) {
     savingStates = { ...savingStates, [memberId]: true }; // Start saving state for this row
 
-    try {
-      const userDocRef = doc(db, "users", memberId);
-      await updateDoc(userDocRef, {
-        role: newRole,
+    try{
+      const response = await fetch(`/api/user/${memberId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role: newRole }),
       });
-      successToast(`อัปเดตบทบาทสำเร็จ`);
-    } catch (error) {
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }else{
+        successToast(`อัปเดตบทบาทสำเร็จ`);
+      }
+    }catch (error) {
       console.error("Error updating role:", error);
       dangerToast(`เกิดข้อผิดพลาดในการอัปเดตบทบาท: ${error.message}`);
     } finally {
@@ -171,9 +156,12 @@
   </div>
 
   {#if isLoading && !members.length} <!-- Show loading only if list is empty -->
+    <div class="flex items-center justify-center h-64">
+      <Loading />
+    </div>
+  {:else if members.length === 0 && !isLoading}
     <div class="text-center py-10">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      <p class="text-gray-500 mt-2">กำลังโหลดข้อมูล...</p>
+      <p class="text-gray-500">ไม่มีสมาชิกที่ตรงกับเงื่อนไข</p>
     </div>
   {:else if noDataFound}
     <div class="text-center py-10">

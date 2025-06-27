@@ -1,7 +1,6 @@
 <script>
 	import { auth } from '$lib/firebase';
 	import { sendPasswordResetEmail } from 'firebase/auth';
-	import { goto } from '$app/navigation';
 	import { warningToast, successToast, dangerToast } from '$lib/customtoast'; // สมมติว่ามี custom toast
 
 	let email = '';
