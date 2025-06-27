@@ -3,6 +3,7 @@
   import { successToast, dangerToast } from "$lib/customtoast"; // Import toasts
   import { getrolename } from "$lib/Getrolename";
   import Loading from "$lib/components/loading.svelte";
+  import {debounce} from "$lib/debounce"; // Import debounce function
 
   let members = [];
   let currentPage = 1;
@@ -48,8 +49,8 @@
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      if (data.data && Array.isArray(data.data)) {
-        members = data.data.map(member => ({
+      if (data&& Array.isArray(data)) {
+        members = data.map(member => ({
           id: member.id, // Assuming uid is the document ID
           email: member.email,
           name: member.name,
@@ -93,11 +94,14 @@
     await loadMembers(1, searchQuery, selectedRoleFilter, true); // Load page 1 and reset pagination
   }
 
+
+
+  const debouncedSearch = debounce(search);
+
   // Function to save the updated role
   async function saveRole(memberId, newRole) {
     savingStates = { ...savingStates, [memberId]: true }; // Start saving state for this row
-
-    try{
+    try {
       const response = await fetch(`/api/user/${memberId}`, {
         method: "PUT",
         headers: {
@@ -109,10 +113,10 @@
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }else{
+      } else {
         successToast(`อัปเดตบทบาทสำเร็จ`);
       }
-    }catch (error) {
+    } catch (error) {
       console.error("Error updating role:", error);
       dangerToast(`เกิดข้อผิดพลาดในการอัปเดตบทบาท: ${error.message}`);
     } finally {
@@ -131,7 +135,7 @@
       type="text"
       placeholder="ค้นหาอีเมลสมาชิก..."
       bind:value={searchQuery}
-      on:input={search}  
+      on:input={debouncedSearch}
       class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 w-full md:w-auto"
     />
     <select
