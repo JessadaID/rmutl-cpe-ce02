@@ -11,7 +11,7 @@
   
     function handleCardClick(itemId) {
       if (itemId) {
-        goto(`/TS_Dashboard/${itemId}`);
+        goto(`${itemId}`);
       } else {
         console.warn("ไม่สามารถนำทางได้: Item ID ว่างเปล่า");
       }
