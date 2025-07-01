@@ -7,7 +7,8 @@
     import { doc, getDoc, updateDoc } from "firebase/firestore";
     import { getCookie } from "cookies-next";
     import { successToast, dangerToast, warningToast } from "$lib/customtoast";
-
+    import Loading from "$lib/components/Loading.svelte";
+    
     let error = "";
     let projectId = "";
     let projectData = null;
@@ -25,7 +26,11 @@
     let isLoading = true;
     let isSaving = false;
 
-    let MAX_SCORE = 0; // Default value, will be fetched from API
+    // Score limits
+    let totalDirectorScoreLimit = 0; // The total score for all directors (e.g., 40)
+    let adviserMaxScore = 0;
+    let perDirectorMaxScore = 0; // The calculated score for a single director
+    $: currentUserMaxScore = roleForRating === 'adviser' ? adviserMaxScore : perDirectorMaxScore;
 
     onMount(async () => {
         isLoading = true;
@@ -113,8 +118,19 @@
             const openForm = formDataResponse.data.find(form => form.isOpen === true);
 
             if (response.ok) {
-                if (openForm && openForm.directorScoreLimit !== undefined) {
-                    MAX_SCORE = Number(openForm.directorScoreLimit);
+                if (openForm) {
+                    totalDirectorScoreLimit = Number(openForm.directorScoreLimit ?? 0);
+                    adviserMaxScore = Number(openForm.adviserScoreLimit ?? 0);
+
+                    // Calculate the score limit for each director
+                    const numberOfDirectors = projectData?.directors?.length || 0;
+                    if (numberOfDirectors > 0) {
+                        // Using toFixed(2) to handle potential floating point issues, then converting back to number
+                        perDirectorMaxScore = parseFloat((totalDirectorScoreLimit / numberOfDirectors).toFixed(2));
+                    } else {
+                        // Fallback if for some reason there are no directors assigned, though this shouldn't happen for a director rating.
+                        perDirectorMaxScore = totalDirectorScoreLimit; 
+                    }
                 }
             }
         } catch (err) {
@@ -122,8 +138,8 @@
         }
     }
     async function handleSaveRating() {
-        if (currentUserRating === null || currentUserRating < 0 || currentUserRating > MAX_SCORE) {
-            warningToast(`กรุณาให้คะแนนระหว่าง 0 ถึง ${MAX_SCORE}`);
+        if (currentUserRating === null || currentUserRating < 0 || currentUserRating > currentUserMaxScore) {
+            warningToast(`กรุณาให้คะแนนระหว่าง 0 ถึง ${currentUserMaxScore}`);
             return;
         }
         // Check if user is authorized to rate (roleForRating would be set)
@@ -268,13 +284,7 @@
             </div>
 
         {:else if isLoading}
-            <!-- Loading State -->
-            <div class="flex flex-col items-center justify-center py-24">
-                <div class="relative">
-                    <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                </div>
-                <p class="mt-4 text-lg text-gray-600">กำลังโหลดข้อมูลโครงงาน...</p>
-            </div>
+            <Loading />
 
         {:else if projectData && roleForRating}
             <!-- Main Content -->
@@ -311,7 +321,11 @@
                             <div class="space-y-4">
                                 <label for="rating" class="block">
                                     <span class="text-lg font-semibold text-gray-900">คะแนน</span>
-                                    <span class="text-sm text-gray-500 ml-2">(เต็ม {MAX_SCORE} คะแนน)</span>
+                                    {#if roleForRating === 'director'}
+                                        <span class="text-sm text-gray-500 ml-2">(เต็ม {currentUserMaxScore} คะแนน, จาก {totalDirectorScoreLimit} คะแนน หาร {projectData?.directors?.length || 1} คน)</span>
+                                    {:else}
+                                        <span class="text-sm text-gray-500 ml-2">(เต็ม {currentUserMaxScore} คะแนน)</span>
+                                    {/if}
                                     <span class="text-red-500 ml-1">*</span>
                                 </label>
                                 
@@ -321,27 +335,27 @@
                                         id="rating"
                                         bind:value={currentUserRating}
                                         min="0"
-                                        max={MAX_SCORE}
+                                        max={currentUserMaxScore}
                                         required
                                         class="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
-                                        placeholder="0 - {MAX_SCORE}"
+                                        placeholder="0 - {currentUserMaxScore}"
                                     />
                                     <div class="absolute inset-y-0 right-5 flex items-center pr-4 pointer-events-none">
-                                        <span class="text-gray-400 text-sm">/ {MAX_SCORE}</span>
+                                        <span class="text-gray-400 text-sm">/ {currentUserMaxScore}</span>
                                     </div>
                                 </div>
 
                                 <!-- Score Visual Indicator -->
-                                {#if currentUserRating !== null && currentUserRating >= 0}
+                                {#if currentUserRating !== null && currentUserRating >= 0 && currentUserMaxScore > 0}
                                     <div class="mt-3">
                                         <div class="flex items-center justify-between text-sm text-gray-600 mb-1">
                                             <span>คะแนนที่ให้</span>
-                                            <span>{((currentUserRating / MAX_SCORE)*100).toFixed(2)}%</span>
+                                            <span>{((currentUserRating / currentUserMaxScore)*100).toFixed(2)}%</span>
                                         </div>
                                         <div class="w-full bg-gray-200 rounded-full h-2">
                                             <div 
-                                                class="h-2 rounded-full transition-all duration-300 {(currentUserRating / MAX_SCORE)*100 >= 80 ? 'bg-green-500' : (currentUserRating / MAX_SCORE)*100 >= 60 ? 'bg-yellow-500' : 'bg-red-500'}"
-                                                style="width: {Math.min((currentUserRating / MAX_SCORE)*100, 100)}%"
+                                                class="h-2 rounded-full transition-all duration-300 {(currentUserRating / currentUserMaxScore)*100 >= 80 ? 'bg-green-500' : (currentUserRating / currentUserMaxScore)*100 >= 60 ? 'bg-yellow-500' : 'bg-red-500'}"
+                                                style="width: {Math.min((currentUserRating / currentUserMaxScore)*100, 100)}%"
                                             ></div>
                                         </div>
                                     </div>
@@ -446,11 +460,11 @@
                                                         <span class="text-blue-600">(คุณ)</span>
                                                     {/if}
                                                     {#if member.isAdviser}
-                                                        <br><span class="text-blue-600">(ประธานกรรมการ)</span>
+                                                        <br><span class="text-blue-600">(ที่ปรึกษา)</span>
                                                     {/if}
                                                 </p>
                                                 {#if member.score !== undefined && member.score !== null}
-                                                    <p class="text-xs text-gray-600">คะแนน: {member.score}/{MAX_SCORE}</p>
+                                                    <p class="text-xs text-gray-600">คะแนน: {member.score}/{member.isAdviser ? adviserMaxScore : perDirectorMaxScore}</p>
                                                 {/if}
                                             </div>
                                         </div>

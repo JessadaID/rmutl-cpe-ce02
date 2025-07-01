@@ -12,6 +12,11 @@ export async function GET({ url }) {
     let queryRef = dataCollectionRef; // Base query reference for Admin SDK
 
     const isOpenParam = url.searchParams.get('isOpen');
+    const termParam = url.searchParams.get('term'); // Expects a string like '2023-1'
+    if (termParam) {
+      queryRef = queryRef.where("term", "==", termParam);
+    }
+
     const sortByCreatedAtDirection = url.searchParams.get('createdAt'); // Expects 'asc' or 'desc'
 
     // Fields to select based on the data transformation
@@ -21,7 +26,9 @@ export async function GET({ url }) {
       'createdAt',
       'updatedAt',
       'projectLimit',
-      'directorScoreLimit'
+      'directorScoreLimit',
+      'adviserScoreLimit', 
+      'subjectScoreLimit'
     ];
 
     if (isOpenParam !== null) {
@@ -50,7 +57,9 @@ export async function GET({ url }) {
         createdAt: convertFirestoreTimestamp(docData?.createdAt),
         updatedAt: convertFirestoreTimestamp(docData?.updatedAt),
         projectLimit: docData?.projectLimit || 0,
-        directorScoreLimit: docData?.directorScoreLimit || 0
+        directorScoreLimit: docData?.directorScoreLimit || 0,
+        adviserScoreLimit: docData?.adviserScoreLimit || 0,
+        subjectScoreLimit: docData?.subjectScoreLimit || 0
       };
     });
 

@@ -35,9 +35,9 @@
     try {
       loading = true;
       // Fetch teachers from the 'users' collection
-      const usersResponse = await fetch('/api/user?role=teachersubject_teacher');
+      const usersResponse = await fetch('/api/user?role=teacher,subject_teacher');
       if (usersResponse.ok) {
-        teachersFromUsers = (await usersResponse.json()).data;
+        teachersFromUsers = (await usersResponse.json());
       } else {
         console.error('Error fetching teachers from users:', usersResponse.status);
       }

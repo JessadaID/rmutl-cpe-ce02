@@ -10,12 +10,16 @@
   export let showDelete = false; // Control visibility of delete button
   export let projectLimitValue = null;
   export let directorScoreLimitValue = 0;
+  export let subjectScoreLimitValue = 0;
+  export let adviserScoreLimitValue = 0;
 
   function handleSave() {
   dispatch('save', { 
     termName: value, // Assuming 'value' is the prop for term name
     projectLimit: projectLimitValue ,
-    directorScoreLimit: directorScoreLimitValue
+    directorScoreLimit: directorScoreLimitValue,
+    subjectScoreLimit: subjectScoreLimitValue,
+    adviserScoreLimit: adviserScoreLimitValue
   });
 }
 
@@ -76,7 +80,36 @@
           min="0"
         />
 
-        <label for="directorScoreLimitInput" class="block text-sm font-medium text-gray-700 mb-2 mt-2">คะแนนเต็มรายบุคคล (กรรมการ)</label>
+
+        <div class="relative grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 border-2 border-gray-200 p-4 rounded-lg">
+          <p class="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-2 text-sm text-gray-500 font-bold">เต็ม 100%</p>
+          <div>
+            <label for="subjectScoreLimitInput" class="block text-sm font-medium text-gray-700 mb-2">คะแนนอาจารย์ประจำวิชา (%)</label>
+            <input 
+              id="subjectScoreLimitInput" 
+              type="number" 
+              bind:value={subjectScoreLimitValue} 
+              placeholder="เช่น 30" 
+              class="w-full px-3 py-2 border border-gray-30" 
+              min="0"
+            />
+            </div>
+
+
+          <div>
+            <label for="adviserScoreLimitInput" class="block text-sm font-medium text-gray-700 mb-2 ">คะแนนอาจารย์ที่ปรึกษา (%)</label>
+            <input 
+              id="adviserScoreLimitInput" 
+              type="number" 
+              bind:value={adviserScoreLimitValue} 
+              placeholder="เช่น 30" 
+              class="w-full px-3 py-2 border border-gray-30" 
+              min="0"
+            />
+          </div>
+
+          <div>
+            <label for="directorScoreLimitInput" class="block text-sm font-medium text-gray-700 mb-2 ">คะแนนกรรมการ (%)</label>
         <input 
           id="directorScoreLimitInput" 
           type="number" 
@@ -85,6 +118,14 @@
           class="w-full px-3 py-2 border border-gray-30" 
           min="0"
         />
+          </div>
+        </div>
+
+        
+
+        
+
+        
       </div>
 
 

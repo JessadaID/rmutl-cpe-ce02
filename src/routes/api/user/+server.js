@@ -41,8 +41,8 @@ export async function GET({ url }) {
       });
       
       // JavaScript pagination
-      const startIndex = (parseInt(page) - 1) * parseInt(limit);
-      users = users.slice(startIndex, startIndex + parseInt(limit));
+      const startIndex = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+      users = users.slice(startIndex, startIndex + parseInt(limit, 10));
       
       return json(users, { status: 200 });
       
@@ -54,6 +54,25 @@ export async function GET({ url }) {
         q = q.where(key, '>=', value.toLowerCase())
              .where(key, '<=', value.toLowerCase() + '\uf8ff')
              .orderBy('email');
+      } else if (key === 'role' && (value.includes(',') || (value.startsWith('[') && value.endsWith(']')))) {
+        const roles = value.replace(/[\[\]]/g, '').split(',').map(r => r.trim()).filter(Boolean);
+        
+        if (roles.length === 0) {
+          return json([], { status: 200 });
+        }
+
+        q = q.where('role', 'in', roles);
+
+        // 'in' query ไม่สามารถใช้ร่วมกับ orderBy และ pagination ของ Firestore ได้
+        // จึงต้องดึงข้อมูลทั้งหมดที่ตรงเงื่อนไขมาก่อน แล้วค่อยทำ pagination ในโค้ด
+        const querySnapshot = await q.get();
+        let users = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const startIndex = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+        users = users.slice(startIndex, startIndex + parseInt(limit, 10));
+        //console.log("Users after filtering by role:", users);
+        return json(users, { status: 200 });
+
       } else {
         q = q.where(key, '==', value)
              .orderBy('__name__');
@@ -66,8 +85,8 @@ export async function GET({ url }) {
     
     // Firestore pagination
     if (page && limit) {
-      const startAt = (parseInt(page) - 1) * parseInt(limit);
-      q = q.offset(startAt).limit(parseInt(limit));
+      const startAt = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+      q = q.offset(startAt).limit(parseInt(limit, 10));
     }
     
     const querySnapshot = await q.get();
