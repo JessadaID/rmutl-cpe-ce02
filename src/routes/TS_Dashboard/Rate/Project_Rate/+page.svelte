@@ -7,8 +7,8 @@
     import { doc, getDoc, updateDoc } from "firebase/firestore";
     import { getCookie } from "cookies-next";
     import { successToast, dangerToast, warningToast } from "$lib/customtoast";
-    import Loading from "$lib/components/Loading.svelte";
-    
+    import Loading from "$lib/components/loading.svelte";
+
     let error = "";
     let projectId = "";
     let projectData = null;
