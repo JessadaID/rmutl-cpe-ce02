@@ -91,8 +91,8 @@
 				} else if (Notification.permission === 'granted') {
 					await requestNotificationPermissionAndSaveToken(); // Ensure token is up-to-date
 				} else {
-					// console.log('Notification permission denied.');
-					dangerToast('การแจ้งเตือนถูกปิดกั้น โปรดเปิดใช้งานในการตั้งค่าเบราว์เซอร์');
+					 console.log('Notification permission denied.');
+					//dangerToast('การแจ้งเตือนถูกปิดกั้น โปรดเปิดใช้งานในการตั้งค่าเบราว์เซอร์');
 				}
 			} catch (error) {
 				console.error('Error requesting notification permission:', error);
