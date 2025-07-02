@@ -536,7 +536,7 @@
         {#if showTask}
           <!-- Right Column: Process Component and/or Director Scores with Fixed Sticky Positioning -->
           <div class="md:w-5/12 lg:w-4/12">
-            <div class="sticky top-20 max-h-[calc(100vh-120px)] overflow-y-hidden">
+            <div class="sticky top-20 overflow-y-auto h-[calc(100vh-5rem)]">
               {#if shouldShowProcessComponent && canViewDirectorScores}
                 <!-- Both views available, show tabs -->
                 <div class="bg-white shadow-lg rounded-lg">

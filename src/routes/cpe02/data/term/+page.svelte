@@ -162,11 +162,11 @@
 	/**
 	 * Gets the status from the latest task in the project.Tasks object.
 	 * @param {object} tasks - The project.Tasks object (e.g., { "0": { status: "...", ... }, "1": { status: "...", ... } }).
-	 * @returns {string} The status string (e.g., "approve", "wait") or "ไม่ระบุ".
+	 * @returns {object} An object containing the status and taskIndex.
 	 */
 	function getLatestTaskStatus(tasks) {
 		if (!tasks || typeof tasks !== 'object' || Object.keys(tasks).length === 0) {
-			return 'wait'; // Default status if no tasks or tasks is not an object
+			return { status: 'wait', taskIndex: 0 }; // Default if no tasks or tasks is not an object
 		}
 		const taskIndices = Object.keys(tasks)
 			.map(Number) // Convert keys to numbers
@@ -174,11 +174,35 @@
 			.sort((a, b) => a - b); // Sort numerically
 
 		if (taskIndices.length === 0) {
-			return 'wait'; // No valid numeric keys
+			return { status: 'wait', taskIndex: 0 }; // No valid numeric keys
 		}
 
 		const latestTaskIndex = taskIndices[taskIndices.length - 1];
-		return tasks[latestTaskIndex]?.status || 'wait';
+		console.log('Latest task index:', latestTaskIndex +1 );
+		return { 
+			status: tasks[latestTaskIndex]?.status || 'wait', 
+			taskIndex: latestTaskIndex 
+		};
+	}
+
+	/**
+	 * Gets a formatted status text based on status and taskIndex
+	 * @param {string} status - The status value
+	 * @param {number} taskIndex - The task index number
+	 * @returns {string} Formatted status text in Thai
+	 */
+	function getFormattedStatus(status, taskIndex) {
+		const round = taskIndex + 1; // Convert to 1-based for display
+		
+		if (status === 'approve') {
+			return `อนุมัติงานที่ ${round}`;
+		} else if (status === 'wait') {
+			return `รออนุมัติงานที่ ${round}`;
+		} else if (status === 'improvement') {
+			return `แก้ไขงานที่ ${round}`;
+		} else {
+			return 'ไม่ระบุ';
+		}
 	}
 
 	
@@ -320,24 +344,39 @@
 										{/if}
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap">
-										<!-- New Status Display Logic -->
-										{#if getLatestTaskStatus(project.Tasks) === 'approve'}
+										<!-- Enhanced Status Display Logic -->
+										{#if project.Tasks}
+											{@const taskStatus = getLatestTaskStatus(project.Tasks)}
+											{#if taskStatus.status === 'approve'}
+												<span
+													class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
+												>
+													{getFormattedStatus(taskStatus.status, taskStatus.taskIndex)}
+												</span>
+											{:else if taskStatus.status === 'wait'}
+												<span
+													class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"
+												>
+													{getFormattedStatus(taskStatus.status, taskStatus.taskIndex)}
+												</span>
+											{:else if taskStatus.status === 'improvement'}
+												<span
+													class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800"
+												>
+													{getFormattedStatus(taskStatus.status, taskStatus.taskIndex)}
+												</span>
+											{:else}
+												<span
+													class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800"
+												>
+													ไม่ระบุ
+												</span>
+											{/if}
+										{:else}
 											<span
-												class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
+												class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800"
 											>
-												อนุมัติแล้ว
-											</span>
-										{:else if getLatestTaskStatus(project.Tasks) === 'wait'}
-											<span
-												class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"
-											>
-												รอการอนุมัติ
-											</span>
-										{:else if getLatestTaskStatus(project.Tasks) === 'improvement'}
-											<span
-												class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800"
-											>
-												ต้องแก้ไข
+												ไม่ระบุ
 											</span>
 										{/if}
 									</td>
