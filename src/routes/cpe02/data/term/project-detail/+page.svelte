@@ -80,7 +80,7 @@
         const versionsRef = collection(db, "project-approve", projectId, "project_versions");
         const form_respond = await fetch("/api/form-data?term="+project.term);
         form_data = (await form_respond.json()).data;
-        console.log("Form Data:", form_data);
+        //console.log("Form Data:", form_data);
 
         const versionsSnapshot = await getDocs(versionsRef);
 

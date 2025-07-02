@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { goToProject_Details } from "$lib/NavigateWithToken";
     import Loading from "$lib/components/loading.svelte";
+    import TeacherTooltip from "$lib/components/teacherTooltip.svelte";
     let projects = [];
     let filteredProjects = [];
     let loading = true; // Start with loading true
@@ -57,15 +58,7 @@
                             }
                         );
 
-                        // Extract chairman name from the first adviser
-                        let chairmanName = "ไม่ระบุ";
-                        if (Array.isArray(projectData.adviser) && projectData.adviser.length > 0) {
-                            const firstAdviser = projectData.adviser[0];
-                            if (firstAdviser) {
-                                chairmanName = firstAdviser.name || firstAdviser.email || "ไม่ระบุ";
-                            }
-                        }
-
+                  
                         const directorCount = directorsArray.length;
 
                         if (directorCount > maxDirectors) {
@@ -76,7 +69,6 @@
                             ...projectData,
                             directorNames: extractedDirectorNames,
                             directorCount: directorCount,
-                            chairmanName: chairmanName,
                         };
                     });
                 } else {
@@ -195,7 +187,7 @@
                                         ชื่อโครงงาน
                                     </th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        ประธานกรรมการ
+                                        ที่ปรึกษาโครงงาน
                                     </th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         จำนวนกรรมการ
@@ -214,7 +206,12 @@
                                             <div class="text-sm text-blue-600 hover:underline cursor-pointer" on:click={() => goToProject_Details(project.id)}>{project.project_name_th}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-900">{project.chairmanName}</div>
+
+                                            <div class="text-sm text-gray-700 flex items-center space-x-1">
+												<span>{ project.adviser[0]?.name || 'N/A'}</span>
+
+													<TeacherTooltip members={project.adviser} />
+										</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm text-gray-900">{project.directorCount}</div>

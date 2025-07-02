@@ -6,8 +6,9 @@
 	import { warningToast } from '$lib/customtoast';
 	import { getCookie } from 'cookies-next'; // Assuming this works correctly in SvelteKit context
 	import { verifyJWT , createJWT } from '$lib/jwt'; // Import verifyJWT
-  import Loading from '$lib/components/loading.svelte';
-
+    import Loading from '$lib/components/loading.svelte';
+	import MemberTooltip from '$lib/components/memberTooltip.svelte'; // Import the member tooltip component
+	import TeacherTooltip from '$lib/components/teacherTooltip.svelte';
 	let termId = null; // Initialize termId to null
 	let allProjects = null; // Store the original fetched data
 	let filteredProjects = []; // Store the data to be displayed (after filtering)
@@ -179,6 +180,8 @@
 		const latestTaskIndex = taskIndices[taskIndices.length - 1];
 		return tasks[latestTaskIndex]?.status || 'wait';
 	}
+
+	
 </script>
 
 <svelte:head>
@@ -295,29 +298,9 @@
 											<div class="text-sm text-gray-700 flex items-center space-x-1">
 												<span>{project.members[0] || 'N/A'}</span>
 												{#if project.members.length > 1}
-													<div class="relative group">
-														<span
-															class="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium ring-1 ring-green-600/20 ring-inset cursor-help select-none"
-														>
-															+ {project.members.length - 1}
-														</span>
-														<!-- Tooltip with z-50 -->
-														<div
-															class="absolute bottom-full left-1/2 z-50 -translate-x-1/2 mb-2 w-max max-w-xs p-2
-                                        bg-gray-700 text-white text-xs rounded shadow-lg
-                                        opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none
-                                        whitespace-nowrap "
-														>
-															<ul class="list-none p-0 m-0 text-left">
-																{#each project.members as member, i}
-																	<li>{i + 1}. {member || 'N/A'}</li>
-																{/each}
-															</ul>
-															<div
-																class="absolute left-1/2 -translate-x-1/2 top-full mt-[-1px] w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-700"
-															></div>
-														</div>
-													</div>
+													
+													<MemberTooltip members={project.members} />
+
 												{/if}
 											</div>
 										{:else}
@@ -326,18 +309,12 @@
 									</td>
 									<td class="px-6 py-4 whitespace-normal">
 										{#if project.adviser && project.adviser.length > 0}
-											<ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
-												{#each project.adviser as adv}
-													{#if adv.name != null}
-														<li>
-															{adv.name}
-															<!--{#if adv.email}<span class="text-gray-500 text-xs ml-1">({adv.email})</span>{/if}-->
-														</li>
-													{:else}
-														<li>{adv}</li>
-													{/if}
-												{/each}
-											</ul>
+										<div class="text-sm text-gray-700 flex items-center space-x-1">
+												<span>{project.adviser[0].name || 'N/A'}</span>
+
+													<TeacherTooltip members={project.adviser} />
+										</div>
+
 										{:else}
 											<span class="text-sm text-gray-500">ไม่มี</span>
 										{/if}

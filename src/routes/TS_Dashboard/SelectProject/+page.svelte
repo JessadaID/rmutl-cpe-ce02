@@ -525,7 +525,7 @@
   {/if}
 </div>
 
-<HelpModal bind:showModal={showHelpModal} title="วิธีการใช้งานระบบนัดหมายสอบโครงงาน" onClose={() => showHelpModal = false}>
+<HelpModal bind:showModal={showHelpModal} title="วิธีการใช้งานระบบ" onClose={() => showHelpModal = false}>
     <h3 class="text-lg font-semibold text-blue-600 mb-2">สำหรับอาจารย์ที่ปรึกษา:</h3>
     <p class="mb-3">
       ท่าน<strong>ไม่จำเป็นต้อง</strong>เลือกโครงงานที่ท่านเป็น<strong>อาจารย์ที่ปรึกษา</strong>ในหน้านี้อีกครั้ง ระบบจะทราบข้อมูลของท่านจากรายละเอียดโครงงานโดยอัตโนมัติครับ

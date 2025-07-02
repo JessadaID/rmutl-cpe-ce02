@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import TeacherTooltip from '$lib/components/teacherTooltip.svelte';
 
   let terms = [];
   let selectedTermId = '';
@@ -13,7 +14,11 @@
   let tooltipVisible = false;
   let tooltipX = 0;
   let tooltipY = 0;
-  let selectedTermMaxScore = 0;
+  let selectedTermScoreLimits = {
+    subjectScoreLimit: 0,
+    directorScoreLimit: 0,
+    adviserScoreLimit: 0
+  };
 
   async function fetchTerms() {
     const respond = await fetch('/api/form-data');
@@ -27,7 +32,6 @@
     }
     const respond = await fetch(`/api/project-data?term=${termId}`);
     const data = (await respond.json()).data;
-    //console.log(data);
     return data;
   }
 
@@ -62,7 +66,11 @@
       })();
     } else {
       projectScores = [];
-      selectedTermMaxScore = 0;
+      selectedTermScoreLimits = {
+        subjectScoreLimit: 0,
+        directorScoreLimit: 0,
+        adviserScoreLimit: 0
+      };
     }
   }
 
@@ -82,9 +90,13 @@
         // Search in directors
         const directors = (project.directors || []).map(d => (d.name || '').toLowerCase()).join(' ');
         
+        // Search in subject teachers
+        const subjectTeachers = (project.subjectTeachers || []).map(s => (s.name || '').toLowerCase()).join(' ');
+        
         return projectName.includes(query) || 
                advisers.includes(query) || 
-               directors.includes(query);
+               directors.includes(query) ||
+               subjectTeachers.includes(query);
       });
     }
   }
@@ -92,8 +104,15 @@
   $: selectedTermName = terms.find(t => t.id === selectedTermId)?.term || '';
   $: {
     const term = terms.find(t => t.id === selectedTermId);
-    selectedTermMaxScore = term ? term.directorScoreLimit : 0;
+    if (term) {
+      selectedTermScoreLimits = {
+        subjectScoreLimit: term.subjectScoreLimit || 0,
+        directorScoreLimit: term.directorScoreLimit || 0,
+        adviserScoreLimit: term.adviserScoreLimit || 0
+      };
+    }
   }
+
   function getAdviserNames(advisers) {
     if (!advisers || advisers.length === 0) return '-';
     return advisers.map(a => a.name || 'N/A').join(', ');
@@ -104,9 +123,13 @@
     return directors.map(d => d.name || 'N/A').join(', ');
   }
 
+  function getSubjectTeacherNames(subjectTeachers) {
+    if (!subjectTeachers || subjectTeachers.length === 0) return '-';
+    return subjectTeachers.map(s => s.name || 'N/A').join(', ');
+  }
+
   function showTooltip(event, text) {
     tooltipText = text;
-    // Position tooltip slightly offset from the mouse pointer
     tooltipX = event.pageX + 10; 
     tooltipY = event.pageY + 5;
     tooltipVisible = true;
@@ -116,7 +139,7 @@
     tooltipVisible = false;
   }
 
-  // Function to calculate overall average score from advisers and directors
+  // Function to calculate overall average score from all three score types
   function calculateOverallAverage(project) {
     const adviserScores = (project.adviser || [])
       .map(a => a.score)
@@ -126,25 +149,56 @@
       .map(d => d.score)
       .filter(score => score !== undefined && score !== null && typeof score === 'number');
 
-    const allScores = [...adviserScores, ...directorScores];
+    const subjectScores = (project.subjectTeachers || [])
+      .map(s => s.score)
+      .filter(score => score !== undefined && score !== null && typeof score === 'number');
+
+    const allScores = [...adviserScores, ...directorScores, ...subjectScores];
 
     if (allScores.length === 0) {
-      return null; // Return null if no valid scores are found
+      return null;
     }
 
     const totalScore = allScores.reduce((sum, score) => sum + score, 0);
-    return totalScore / allScores.length;
+    return totalScore 
+  }
+
+  // Function to get the maximum possible score
+  function getMaxPossibleScore() {
+    const { subjectScoreLimit, directorScoreLimit, adviserScoreLimit } = selectedTermScoreLimits;
+    return Math.max(subjectScoreLimit, directorScoreLimit, adviserScoreLimit);
   }
   
 </script>
 
 <div class="min-h-screen bg-gray-50 py-6 px-4">
-  <div class="max-w-7xl mx-auto">
+  <div class="max-w-full mx-auto">
     <!-- Header -->
     <div class="text-center mb-6">
       <h1 class="text-2xl font-bold text-gray-900 mb-1">คะแนนโครงงาน</h1>
-      <p class="text-sm text-gray-600">ระบบแสดงผลคะแนนโครงงานในรูปแบบตาราง</p>
+      <p class="text-sm text-gray-600">ระบบแสดงผลคะแนนโครงงานในรูปแบบตาราง (3 ประเภทคะแนน)</p>
     </div>
+
+    <!-- Score Legend -->
+    {#if selectedTermId}
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+        <h3 class="text-sm font-medium text-gray-700 mb-2">คะแนนเต็มของแต่ละประเภท:</h3>
+        <div class="flex flex-wrap gap-4 text-sm">
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+            <span>คะแนนรายวิชา: {selectedTermScoreLimits.subjectScoreLimit}</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+            <span>คะแนนที่ปรึกษา: {selectedTermScoreLimits.adviserScoreLimit}</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+            <span>คะแนนกรรมการ: {selectedTermScoreLimits.directorScoreLimit}</span>
+          </div>
+        </div>
+      </div>
+    {/if}
 
     <!-- Controls -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
@@ -170,7 +224,7 @@
         <!-- Search -->
         <div>
           <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
-            ค้นหา (ชื่อโครงงาน, อาจารย์, กรรมการ)
+            ค้นหา (ชื่อโครงงาน, อาจารย์, กรรมการ, อาจารย์ประจำวิชา)
           </label>
           <div class="relative">
             <input
@@ -228,51 +282,95 @@
 
     <!-- Table -->
     {:else if filteredProjects.length > 0}
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="overflow-x-auto">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   ชื่อโครงงาน
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-300">
+                  <div class="flex items-center justify-center">
+                    <div class="w-2 h-2 bg-orange-500 rounded-full mr-1"></div>
+                    คะแนนรายวิชา
+                  </div>
+                </th>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   อาจารย์ที่ปรึกษา
                 </th>
-                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  คะแนนที่ปรึกษา
+                <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-300">
+                  <div class="flex items-center justify-center">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full mr-1"></div>
+                    คะแนนที่ปรึกษา
+                  </div>
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   กรรมการสอบ
                 </th>
-                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  คะแนนกรรมการ
+                <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-300">
+                  <div class="flex items-center justify-center">
+                    <div class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                    คะแนนกรรมการ
+                  </div>
                 </th>
-                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  คะแนนเฉลี่ย (เต็ม {selectedTermMaxScore})
+                <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-400">
+                  คะแนนรวม (เต็ม 100)
                 </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              {#each filteredProjects as project , i }
+              {#each filteredProjects as project, i}
                 {@const currentOverallAverage = calculateOverallAverage(project)}
                 <tr class="hover:bg-gray-50 transition-colors">
                   <!-- Project Name -->
-                  <td class="px-4 py-3 text-sm text-gray-900 max-w-xs">
+                  <td class="px-3 py-3 text-sm text-gray-900 max-w-xs">
                     <div class="font-medium leading-tight">
                       {project.project_name_th || 'ไม่ระบุชื่อโครงงาน'}
                     </div>
                   </td>
 
-                  <!-- Advisers -->
-                  <td class="px-4 py-3 text-sm text-gray-700 max-w-xs">
-                    <div class="leading-tight">
-                      {getAdviserNames(project.adviser)}
+               
+
+                  <!-- Subject Scores -->
+                  <td class="px-3 py-3 text-sm text-center bg-gray-100">
+                    <div class="font-medium text-orange-600 flex flex-wrap justify-center gap-1">
+                      {#if project.subjectTeachers && project.subjectTeachers.length > 0}
+                        {#each project.subjectTeachers as teacher}
+                          {#if teacher.score !== undefined && teacher.score !== null}
+                            <span
+                              on:mouseenter={(e) => showTooltip(e, teacher.name || teacher.email)}
+                              on:mouseleave={hideTooltip}
+                              class="cursor-default"
+                            >{teacher.score}</span>
+                          {:else}
+                            <span
+                              on:mouseenter={(e) => showTooltip(e, teacher.name || teacher.email)}
+                              on:mouseleave={hideTooltip}
+                              class="cursor-default"
+                            >-</span>
+                          {/if}
+                          {#if teacher !== project.subjectTeachers[project.subjectTeachers.length - 1]}
+                            ,
+                          {/if}
+                        {/each}
+                      {:else}
+                        -
+                      {/if}
                     </div>
                   </td>
 
+                  <!-- Advisers -->
+                  <td class="px-3 py-3 text-sm text-gray-700 max-w-xs">
+                    <div class="text-sm text-gray-700 flex items-center space-x-1">
+												<span>{project.adviser[0].name || 'N/A'}</span>
+
+													<TeacherTooltip members={project.adviser} />
+										</div>
+                  </td>
+
                   <!-- Adviser Scores -->
-                  <td class="px-4 py-3 text-sm text-center">
+                  <td class="px-3 py-3 text-sm text-center bg-gray-100">
                     <div class="font-medium text-blue-600 flex flex-wrap justify-center gap-1">
                       {#if project.adviser && project.adviser.length > 0}
                         {#each project.adviser as person}
@@ -300,14 +398,17 @@
                   </td>
 
                   <!-- Directors -->
-                  <td class="px-4 py-3 text-sm text-gray-700 max-w-xs">
-                    <div class="leading-tight">
-                      {getDirectorNames(project.directors)}
-                    </div>
+                  <td class="px-3 py-3 text-sm text-gray-700 max-w-xs">
+                    {console.log(project.directors)}
+                    <div class="text-sm text-gray-700 flex items-center space-x-1">
+												<span>{project.directors[0]?.name || 'ยังไม่มีกรรมการ' || 'N/A'}</span>
+
+													<TeacherTooltip members={project.directors} />
+										</div>
                   </td>
 
                   <!-- Director Scores -->
-                  <td class="px-4 py-3 text-sm text-center">
+                  <td class="px-3 py-3 text-sm text-center bg-gray-100">
                     <div class="font-medium text-green-600 flex flex-wrap justify-center gap-1">
                       {#if project.directors && project.directors.length > 0}
                         {#each project.directors as director}
@@ -334,14 +435,14 @@
                     </div>
                   </td>
 
-                  <!-- Total Score -->
-                  <td class="px-4 py-3 text-sm text-center">
+                  <!-- Overall Average Score -->
+                  <td class="px-3 py-3 text-sm text-center bg-gray-200">
                     {#if currentOverallAverage !== null}
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
                         {currentOverallAverage.toFixed(2)}
                       </span>
                     {:else}
-                      <span class="text-gray-400 text-xs">ยังไม่มี</span>
+                      <span class="text-gray-400 text-xs">-</span>
                     {/if}
                   </td>
                 </tr>
