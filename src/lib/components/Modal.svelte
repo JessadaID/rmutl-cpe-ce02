@@ -12,6 +12,9 @@
   export let directorScoreLimitValue = 0;
   export let subjectScoreLimitValue = 0;
   export let adviserScoreLimitValue = 0;
+  export let isCheckedLastermTask = false; // For the checkbox
+
+  $: showisChecked = showDelete; // Local variable to manage checkbox state
 
   function handleSave() {
   dispatch('save', { 
@@ -19,7 +22,8 @@
     projectLimit: projectLimitValue ,
     directorScoreLimit: directorScoreLimitValue,
     subjectScoreLimit: subjectScoreLimitValue,
-    adviserScoreLimit: adviserScoreLimitValue
+    adviserScoreLimit: adviserScoreLimitValue,
+    isCheckedLastermTask: isCheckedLastermTask
   });
 }
 
@@ -121,7 +125,13 @@
           </div>
         </div>
 
-        
+
+        {#if !showisChecked}
+        <div class="mt-4 flex items-center">
+          <input type="checkbox" name="" id="taskFromLastTerm" class="mr-2 cursor-pointer h-4 w-4" checked={isCheckedLastermTask} on:click={() => isCheckedLastermTask = !isCheckedLastermTask}/>
+          <label for="taskFromLastTerm" class="text-sm font-medium text-gray-700">เพิ่มงานที่มอบหมายจากเทอมที่แล้ว</label>
+        </div>
+        {/if}
 
         
 
@@ -160,7 +170,7 @@
           </button>
         </div>
       </div>
-
+      
 
     </div>
   </div>

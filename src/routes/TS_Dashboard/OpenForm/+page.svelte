@@ -28,6 +28,7 @@
     let currentDirectorScoreLimit: number | null = null; // For directorScoreLimit
     let adviserScoreLimitValue = 0; // For adviserScoreLimit
     let subjectScoreLimitValue = 0; // For subjectScoreLimit
+    let isCheckedLastermTask = false; // For the checkbox
 
     let modalTitle = "";
     
@@ -146,7 +147,7 @@
         await updateDoc(termRef, {
           term: updatedName.trim(),
           projectLimit: projectLimit === null ? 0 : Number(projectLimit),
-          directorScoreLimit: directorScoreLimit === null ? 100 : Number(directorScoreLimit),
+          directorScoreLimit: directorScoreLimit === null ? 0 : Number(directorScoreLimit),
           adviserScoreLimit: adviserScoreLimitValue === null ? 0 : Number(adviserScoreLimitValue),
           subjectScoreLimit: subjectScoreLimitValue === null ? 0 : Number(subjectScoreLimitValue),
           updatedAt: serverTimestamp(),
@@ -161,46 +162,135 @@
         loading = false;
       }
     }
-    async function processCreateTerm(newTermName: string, projectLimit: number | null, directorScoreLimit: number | null, adviserScoreLimitValue: number | null = 0, subjectScoreLimitValue: number | null = 0) {
-      if (!newTermName.trim()) return;
 
-      loading = true;
-      try {
-        const batch = writeBatch(db);
-        const formsRef = collection(db, "forms");
-        const snapshot = await getDocs(formsRef);
-        snapshot.docs.forEach((doc) => {
-          if (doc.data().isOpen) {
-            batch.update(doc.ref, {
-              isOpen: false,
-              updatedAt: serverTimestamp(),
-            });
-          }
-        });
-  
-        const newFormRef = doc(collection(db, "forms"));
-        batch.set(newFormRef, {
-          term: newTermName.trim(),
-          projectLimit: projectLimit === null ? 0 : Number(projectLimit),
-          directorScoreLimit: directorScoreLimit === null ? 100 : Number(directorScoreLimit),
-          adviserScoreLimit: adviserScoreLimitValue === null ? 0 : Number(adviserScoreLimitValue),
-          subjectScoreLimit: subjectScoreLimitValue === null ? 0 : Number(subjectScoreLimitValue),
+
+    async function processCreateTerm(newTermName: string, projectLimit: number | null, directorScoreLimit: number | null, adviserScoreLimitValue: number | null = 0, subjectScoreLimitValue: number | null = 0) {
+  if (!newTermName.trim()) return;
+
+  loading = true;
+  try {
+    const batch = writeBatch(db);
+    const formsRef = collection(db, "forms");
+    const snapshot = await getDocs(formsRef);
+    
+    // ปิดฟอร์มทั้งหมดที่เปิดอยู่
+    snapshot.docs.forEach((doc) => {
+      if (doc.data().isOpen) {
+        batch.update(doc.ref, {
           isOpen: false,
-          createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
-  
-        await batch.commit();
-        await loadTerms();
-        return true; // Indicate success
-      } catch (error) {
-        console.error("Error creating new term:", error);
-        alert("เกิดข้อผิดพลาดในการสร้างเทอมใหม่");
-        return false; // Indicate failure
-      } finally {
-        loading = false;
       }
+    });
+
+    // สร้างเทอมใหม่
+    const newFormRef = doc(collection(db, "forms"));
+    batch.set(newFormRef, {
+      term: newTermName.trim(),
+      projectLimit: projectLimit === null ? 0 : Number(projectLimit),
+      directorScoreLimit: directorScoreLimit === null ? 0 : Number(directorScoreLimit),
+      adviserScoreLimit: adviserScoreLimitValue === null ? 0 : Number(adviserScoreLimitValue),
+      subjectScoreLimit: subjectScoreLimitValue === null ? 0 : Number(subjectScoreLimitValue),
+      isOpen: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    await batch.commit();
+
+    // ถ้ามีการเช็ค isCheckedLastermTask ให้คัดลอกงานจากเทอมล่าสุด
+    if (isCheckedLastermTask) {
+      await copyTasksFromLatestTerm(newTermName.trim());
     }
+
+    await loadTerms();
+    return true; // Indicate success
+  } catch (error) {
+    console.error("Error creating new term:", error);
+    alert("เกิดข้อผิดพลาดในการสร้างเทอมใหม่");
+    return false; // Indicate failure
+  } finally {
+    loading = false;
+  }
+}
+
+// ฟังก์ชันสำหรับคัดลอกงานจากเทอมล่าสุด
+async function copyTasksFromLatestTerm(newTermName: string) {
+  try {
+    // ดึงข้อมูลเทอมล่าสุด
+    const latestTermResponse = await fetch('/api/form-data?createdAt=desc', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    const latestTermData = await latestTermResponse.json();
+    
+    if (latestTermData.error || !latestTermData.data || latestTermData.data.length < 2) {
+      console.log("ไม่พบเทอมก่อนหน้าสำหรับคัดลอกงาน");
+      return;
+    }
+
+    // เทอมล่าสุดคือเทอมที่เพิ่งสร้าง (index 0) ดังนั้นเอาเทอมที่ 2 (index 1)
+    const previousTerm = latestTermData.data[1];
+    
+    // ดึงข้อมูลงานทั้งหมดจากเทอมก่อนหน้า
+    const tasksResponse = await fetch(`/api/tasks-data?term=${encodeURIComponent(previousTerm.term)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    const tasksData = await tasksResponse.json();
+    
+    if (tasksData.error || !tasksData.data || tasksData.data.length === 0) {
+      console.log("ไม่พบงานจากเทอมก่อนหน้าสำหรับคัดลอก");
+      return;
+    }
+
+    // เตรียมข้อมูลงานใหม่สำหรับเทอมใหม่
+    const newTasks = tasksData.data.map(task => ({
+      ...task,
+      term: newTermName, // เปลี่ยนเทอมเป็นเทอมใหม่
+      id: undefined, // ให้ Firebase สร้าง ID ใหม่
+      createdAt: undefined, // ให้ Firebase สร้าง timestamp ใหม่
+      updatedAt: undefined, // ให้ Firebase สร้าง timestamp ใหม่
+      // รีเซ็ตข้อมูลที่เกี่ยวข้องกับการสมัครหรือสถานะ (หากมี)
+      // applications: [], // ถ้ามี field นี้
+      // status: 'open', // ถ้ามี field นี้
+    }));
+
+    // สร้างงานใหม่ทั้งหมด
+    const createTasksPromises = newTasks.map(async (taskData) => {
+      try {
+        const response = await fetch('/api/tasks-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(taskData)
+        });
+        
+        const result = await response.json();
+        if (result.error) {
+          console.error("Error creating task:", result.error);
+        }
+      } catch (error) {
+        console.error("Error creating task:", error);
+      }
+    });
+
+    await Promise.all(createTasksPromises);
+    
+    console.log(`คัดลอกงานจากเทอม "${previousTerm.term}" มาสู่เทอม "${newTermName}" เรียบร้อยแล้ว (${newTasks.length} งาน)`);
+    
+  } catch (error) {
+    console.error("Error copying tasks from latest term:", error);
+    // ไม่ต้อง throw error เพื่อไม่ให้ขัดจังหวะการสร้างเทอม
+  }
+}
 
     function handleDeleteRequest() { // Renamed to avoid conflict if needed, called by Modal's delete event
       if (!currentEditingTerm) return;
@@ -419,6 +509,7 @@
     bind:directorScoreLimitValue={currentDirectorScoreLimit}
     bind:adviserScoreLimitValue={adviserScoreLimitValue}
     bind:subjectScoreLimitValue={subjectScoreLimitValue}
+    bind:isCheckedLastermTask={isCheckedLastermTask}
     loading={loading}
     showDelete={modalMode === 'edit'}
     on:save={(e) => handleModalSave(e.detail)}
