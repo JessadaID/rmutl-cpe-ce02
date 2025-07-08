@@ -43,7 +43,7 @@
                 {
                   id: '/TS_Dashboard/Addtask',
                   label: 'จัดการงาน (Tasks)',
-                  icon: '<svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.75 4.004v15.992m0-15.992H6.804a1 1 0 0 0-.994.92l-.006.08v14.008a1 1 0 0 0 .92.994l.08.006h3.946m0-15.992h6.442a1 1 0 0 1 .994.92l.006.08v14.008a1 1 0 0 1-.92.994l-.08.006H10.75m0-15.992V20m3.219-12.037H17.5V12h-3.531V7.963Zm0 6.074H17.5v4.037h-3.531v-4.037ZM6.781 8.037H10.25V12H6.781V8.037Zm0 6.074H10.25v4.037H6.781v-4.037Z"/></svg>',
+                  icon: '<svg class="w-6 h-6 text-gray-800" xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-checklist"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9.615 20h-2.615a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8" /><path d="M14 19l2 2l4 -4" /><path d="M9 8h4" /><path d="M9 12h2" /></svg>',
                   type: 'link',
                   href: '/TS_Dashboard/Addtask'
                 },
