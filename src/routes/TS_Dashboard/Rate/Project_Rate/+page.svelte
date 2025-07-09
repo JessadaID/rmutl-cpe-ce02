@@ -15,10 +15,10 @@
     let currentUserEmail = "";
     let currentUserName = "";
 
-    // Replaced directorEntry with more specific role checking
-    let currentUserIsAdviser = false; // Is the current user an adviser for THIS project
-    let currentUserIsDirector = false; // Is the current user a director for THIS project
+    // Role information from JWT
     let roleForRating = null; // 'adviser', 'director', or null if not authorized for rating
+    let currentUserIsAdviser = false;
+    let currentUserIsDirector = false;
 
     let currentUserRating = null;
     let currentUserComments = "";
@@ -27,28 +27,45 @@
     let isSaving = false;
 
     // Score limits
-    let totalDirectorScoreLimit = 0; // The total score for all directors (e.g., 40)
-    let adviserMaxScore = 0;
-    let perDirectorMaxScore = 0; // The calculated score for a single director
-    $: currentUserMaxScore = roleForRating === 'adviser' ? adviserMaxScore : perDirectorMaxScore;
+    let totalDirectorScoreLimit = 0;
+    let totalAdviserScoreLimit = 0;
+    let perDirectorMaxScore = 0;
+    let perAdviserMaxScore = 0;
+
+    $: currentUserMaxScore = roleForRating === 'adviser' ? perAdviserMaxScore : perDirectorMaxScore;
 
     onMount(async () => {
         isLoading = true;
         const token = $page.url.searchParams.get('projectId');
-		if (!token) {
-			console.error('No token found in URL');
+        if (!token) {
+            console.error('No token found in URL');
+            error = 'ไม่พบข้อมูลโครงงาน';
+            isLoading = false;
+            return;
         }
         
-		try {
-			const payload = await verifyJWT(token);
-			projectId = payload.projectId;
-		} catch (err) {
-			console.error('Invalid or expired token:', err);
-			error = 'ข้อมูลโครงงานไม่ถูกต้อง หรือหมดอายุ';
+        try {
+            const payload = await verifyJWT(token);
+            projectId = payload.projectId;
+            
+            // Get role from JWT payload
+            if (payload.role) {
+                roleForRating = payload.role; // 'adviser' or 'director'
+                currentUserIsAdviser = roleForRating === 'adviser';
+                currentUserIsDirector = roleForRating === 'director';
+            } else {
+                error = 'ไม่พบข้อมูลบทบาทในการให้คะแนน';
+                isLoading = false;
+                return;
+            }
+            
+        } catch (err) {
+            console.error('Invalid or expired token:', err);
+            error = 'ข้อมูลโครงงานไม่ถูกต้อง หรือหมดอายุ';
             isLoading = false;
-			goto('/TS_Dashboard/Rate');
-			return;
-		}
+            goto('/TS_Dashboard/Rate');
+            return;
+        }
 
         currentUserEmail = getCookie('email');
         currentUserName = getCookie('name') || currentUserEmail;
@@ -61,14 +78,14 @@
         }
 
         if (projectId) {
-            await fetchProjectDetailsAndDetermineRole();
-            await fetchFormSettings(); // Fetch form settings for max score
+            await fetchProjectDetails();
+            await fetchFormSettings();
         }
         
         isLoading = false;
     });
 
-    async function fetchProjectDetailsAndDetermineRole() {
+    async function fetchProjectDetails() {
         try {
             const projectRef = doc(db, "project-approve", projectId);
             const projectSnap = await getDoc(projectRef);
@@ -80,69 +97,61 @@
                 projectData.adviser = Array.isArray(projectData.adviser) ? projectData.adviser : [];
                 projectData.directors = Array.isArray(projectData.directors) ? projectData.directors : [];
 
-                const adviserEntryForCurrentUser = projectData.adviser.find(a => a.email === currentUserEmail);
-                const directorEntryForCurrentUser = projectData.directors.find(d => d.email === currentUserEmail);
-
-                currentUserIsAdviser = !!adviserEntryForCurrentUser;
-                currentUserIsDirector = !!directorEntryForCurrentUser;
-
-                if (currentUserIsAdviser) {
-                    roleForRating = 'adviser';
-                    currentUserRating = adviserEntryForCurrentUser.score !== undefined ? adviserEntryForCurrentUser.score : null;
-                    currentUserComments = adviserEntryForCurrentUser.comments || "";
-                } else if (currentUserIsDirector) {
-                    roleForRating = 'director';
-                    currentUserRating = directorEntryForCurrentUser.score !== undefined ? directorEntryForCurrentUser.score : null;
-                    currentUserComments = directorEntryForCurrentUser.comments || "";
-                } else {
-                    error = 'คุณไม่ได้รับสิทธิ์ในการให้คะแนนโครงงานนี้ (ไม่พบอีเมลของคุณในรายชื่อกรรมการหรืออาจารย์ที่ปรึกษาของโครงงานนี้)';
-                    roleForRating = null;
+                // Find current user's existing rating data based on role
+                if (roleForRating === 'adviser') {
+                    const adviserEntry = projectData.adviser.find(a => a.email === currentUserEmail);
+                    if (adviserEntry) {
+                        currentUserRating = adviserEntry.score !== undefined ? adviserEntry.score : null;
+                        currentUserComments = adviserEntry.comments || "";
+                    }
+                } else if (roleForRating === 'director') {
+                    const directorEntry = projectData.directors.find(d => d.email === currentUserEmail);
+                    if (directorEntry) {
+                        currentUserRating = directorEntry.score !== undefined ? directorEntry.score : null;
+                        currentUserComments = directorEntry.comments || "";
+                    }
                 }
+
+                // If user is not found in the respective array, we'll add them when saving
+                // This handles cases where the user might be authorized via JWT but not yet in the project arrays
+                
             } else {
                 error = 'ไม่พบข้อมูลโครงงาน';
-                roleForRating = null;
             }
         } catch (err) {
             console.error("Error fetching project data:", err);
             error = 'เกิดข้อผิดพลาดในการโหลดข้อมูลโครงงาน: ' + err.message;
-            roleForRating = null;
         }
     }
 
     async function fetchFormSettings() {
         try {
-            // Assuming you have an endpoint to get form settings, potentially by term?
-            // Or maybe a general settings document. For now, a generic API call:
-            const response = await fetch('/api/form-data?isOpen=true'); // Replace with your actual endpoint
+            const response = await fetch('/api/form-data?isOpen=true');
             const formDataResponse = await response.json();
             const openForm = formDataResponse.data.find(form => form.isOpen === true);
 
-            if (response.ok) {
-                if (openForm) {
-                    totalDirectorScoreLimit = Number(openForm.directorScoreLimit ?? 0);
-                    adviserMaxScore = Number(openForm.adviserScoreLimit ?? 0);
+            if (response.ok && openForm) {
+                totalDirectorScoreLimit = Number(openForm.directorScoreLimit ?? 0);
+                totalAdviserScoreLimit = Number(openForm.adviserScoreLimit ?? 0);
 
-                    // Calculate the score limit for each director
-                    const numberOfDirectors = projectData?.directors?.length || 0;
-                    if (numberOfDirectors > 0) {
-                        // Using toFixed(2) to handle potential floating point issues, then converting back to number
-                        perDirectorMaxScore = parseFloat((totalDirectorScoreLimit / numberOfDirectors).toFixed(2));
-                    } else {
-                        // Fallback if for some reason there are no directors assigned, though this shouldn't happen for a director rating.
-                        perDirectorMaxScore = totalDirectorScoreLimit; 
-                    }
-                }
+                // Calculate the score limit for each director
+                const numberOfDirectors = projectData?.directors?.length || 1;
+                perDirectorMaxScore = parseFloat((totalDirectorScoreLimit / numberOfDirectors).toFixed(2));
+
+                const numberOfAdvisers = projectData?.adviser?.length || 1;
+                perAdviserMaxScore = parseFloat((totalAdviserScoreLimit / numberOfAdvisers).toFixed(2));
             }
         } catch (err) {
             console.error("Error fetching form settings:", err);
         }
     }
+
     async function handleSaveRating() {
         if (currentUserRating === null || currentUserRating < 0 || currentUserRating > currentUserMaxScore) {
             warningToast(`กรุณาให้คะแนนระหว่าง 0 ถึง ${currentUserMaxScore}`);
             return;
         }
-        // Check if user is authorized to rate (roleForRating would be set)
+
         if (!roleForRating) {
             dangerToast('ไม่สามารถบันทึกคะแนนได้: ไม่ได้รับสิทธิ์หรือมีข้อผิดพลาดในการโหลดข้อมูลผู้ใช้');
             return;
@@ -153,42 +162,38 @@
             const projectRef = doc(db, "project-approve", projectId);
             let dataToUpdateFirestore = {};
 
+            const ratingData = {
+                email: currentUserEmail,
+                name: currentUserName,
+                score: Number(currentUserRating),
+                comments: currentUserComments || "",
+                ratedAt: new Date().toISOString()
+            };
+
             if (roleForRating === 'adviser') {
-                const updatedAdvisers = projectData.adviser.map(adv => {
-                    if (adv.email === currentUserEmail) {
-                        return {
-                            ...adv,
-                            score: Number(currentUserRating),
-                            comments: currentUserComments || "",
-                            ratedAt: new Date().toISOString()
-                        };
-                    }
-                    return adv;
-                });
-                dataToUpdateFirestore.adviser = updatedAdvisers;
-                projectData.adviser = updatedAdvisers; // Update local reactive data
+                // Find existing adviser or add new one
+                const adviserIndex = projectData.adviser.findIndex(adv => adv.email === currentUserEmail);
+                if (adviserIndex >= 0) {
+                    projectData.adviser[adviserIndex] = { ...projectData.adviser[adviserIndex], ...ratingData };
+                } else {
+                    projectData.adviser.push(ratingData);
+                }
+                dataToUpdateFirestore.adviser = projectData.adviser;
 
             } else if (roleForRating === 'director') {
-                const updatedDirectors = projectData.directors.map(dir => {
-                    if (dir.email === currentUserEmail) {
-                        return {
-                            ...dir,
-                            score: Number(currentUserRating),
-                            comments: currentUserComments || "",
-                            ratedAt: new Date().toISOString()
-                        };
-                    }
-                    return dir;
-                });
-                dataToUpdateFirestore.directors = updatedDirectors;
-                projectData.directors = updatedDirectors; // Update local reactive data
+                // Find existing director or add new one
+                const directorIndex = projectData.directors.findIndex(dir => dir.email === currentUserEmail);
+                if (directorIndex >= 0) {
+                    projectData.directors[directorIndex] = { ...projectData.directors[directorIndex], ...ratingData };
+                } else {
+                    projectData.directors.push(ratingData);
+                }
+                dataToUpdateFirestore.directors = projectData.directors;
             }
 
             if (Object.keys(dataToUpdateFirestore).length > 0) {
                 await updateDoc(projectRef, dataToUpdateFirestore);
                 successToast('บันทึกคะแนนเรียบร้อยแล้ว');
-            } else {
-                warningToast('ไม่มีบทบาทที่ถูกต้องสำหรับการบันทึกคะแนน'); // Should ideally not be reached if roleForRating is validated
             }
         } catch (err) {
             console.error("Error saving rating:", err);
@@ -203,14 +208,14 @@
     $: totalDirectors = (projectData?.directors?.length || 0) + (projectData?.adviser?.length || 0);
     $: completionPercentage = totalDirectors > 0 ? Math.round((completedCount / totalDirectors) * 100) : 0;
 
-    // Create a list of committee members for display, ensuring all advisers are included
+    // Create a list of committee members for display
     let committeeMembersForDisplay = [];
     $: {
         let members = [];
         const adviserEmails = new Set();
         const allAdvisersFromProjectData = [];
 
-        // 1. Collect all adviser details and their emails from projectData.adviser
+        // Collect all adviser details and their emails
         if (projectData?.adviser && Array.isArray(projectData.adviser)) {
             projectData.adviser.forEach(adv => {
                 if (adv && adv.email) {
@@ -220,23 +225,22 @@
             });
         }
 
-        // 2. Process directors from projectData.directors
+        // Process directors
         if (projectData?.directors) {
             members = projectData.directors.map(d => ({
                 ...d,
-                isAdviser: adviserEmails.has(d.email) // Mark if this director is also an adviser
+                isAdviser: adviserEmails.has(d.email)
             }));
         }
 
-        // 3. Add advisers (from allAdvisersFromProjectData) who are not already in the members list
-        // (i.e., they are advisers but not listed as directors)
+        // Add advisers who are not already in the members list
         allAdvisersFromProjectData.forEach(adv => {
             if (!members.some(m => m.email === adv.email)) {
                 members.push({
                     email: adv.email,
-                    name: adv.name, // Use adviser's name (or email if name is not present)
-                    score: adv.score || undefined, // Adviser-only entry won't have a director's score from this form
-                    isAdviser: true, // They are an adviser
+                    name: adv.name,
+                    score: adv.score || undefined,
+                    isAdviser: true,
                 });
             }
         });
@@ -308,7 +312,14 @@
                                         </div>
                                         <div>
                                             <p class="text-sm font-medium text-gray-900">{currentUserName}</p>
-                                            <p class="text-xs text-gray-600">{currentUserEmail}</p>
+                                            <p class="text-xs text-gray-600">
+                                                {currentUserEmail}
+                                                {#if roleForRating === 'adviser'}
+                                                    <span class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">อาจารย์ที่ปรึกษา</span>
+                                                {:else if roleForRating === 'director'}
+                                                    <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">กรรมการ</span>
+                                                {/if}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -323,8 +334,8 @@
                                     <span class="text-lg font-semibold text-gray-900">คะแนน</span>
                                     {#if roleForRating === 'director'}
                                         <span class="text-sm text-gray-500 ml-2">(เต็ม {currentUserMaxScore} คะแนน, จาก {totalDirectorScoreLimit} คะแนน หาร {projectData?.directors?.length || 1} คน)</span>
-                                    {:else}
-                                        <span class="text-sm text-gray-500 ml-2">(เต็ม {currentUserMaxScore} คะแนน)</span>
+                                    {:else if roleForRating === 'adviser'}
+                                        <span class="text-sm text-gray-500 ml-2">(เต็ม {currentUserMaxScore} คะแนน , จาก {totalAdviserScoreLimit} คะแนน หาร {projectData?.adviser?.length || 1} คน)</span>
                                     {/if}
                                     <span class="text-red-500 ml-1">*</span>
                                 </label>
@@ -336,6 +347,7 @@
                                         bind:value={currentUserRating}
                                         min="0"
                                         max={currentUserMaxScore}
+                                        step="0.01"
                                         required
                                         class="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
                                         placeholder="0 - {currentUserMaxScore}"
@@ -460,11 +472,11 @@
                                                         <span class="text-blue-600">(คุณ)</span>
                                                     {/if}
                                                     {#if member.isAdviser}
-                                                        <br><span class="text-blue-600">(ที่ปรึกษา)</span>
+                                                        <br><span class="text-green-600">(ที่ปรึกษา)</span>
                                                     {/if}
                                                 </p>
                                                 {#if member.score !== undefined && member.score !== null}
-                                                    <p class="text-xs text-gray-600">คะแนน: {member.score}/{member.isAdviser ? adviserMaxScore : perDirectorMaxScore}</p>
+                                                    <p class="text-xs text-gray-600">คะแนน: {member.score}/{member.isAdviser ? perAdviserMaxScore : perDirectorMaxScore}</p>
                                                 {/if}
                                             </div>
                                         </div>
@@ -494,8 +506,6 @@
                 </div>
             </div>
 
-        <!-- If not loading, no error, but still no projectData or no roleForRating, show fallback. -->
-        <!-- Auth errors (like not being an adviser/director for the project) are handled by the main #if error block -->
         {:else if !isLoading} 
             <!-- Fallback State -->
             <div class="text-center py-24">

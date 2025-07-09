@@ -169,124 +169,171 @@
   }
 
   async function saveSelection() {
-    if (projectLimit !== null && selectedProjects.length > projectLimit) {
-      warningToast(
-        `คุณสามารถเลือกโครงงานได้สูงสุด ${projectLimit} โครงงานเท่านั้น`
-      );
-      return;
-    }
-
-    if (!userName) {
-      dangerToast("ไม่พบข้อมูลชื่อผู้ใช้ กรุณาลองใหม่อีกครั้ง");
-      return;
-    }
-
-    saving = true;
-
-    try {
-      loading = true;
-
-      const updatedProjects = projects.map((project) => ({
-        id: project.id,
-        selected: project.selected,
-      }));
-
-      const updatePromises = updatedProjects.map(async (project) => {
-        const projectRef = doc(db, "project-approve", project.id);
-        const projectDoc = await getDoc(projectRef);
-
-        if (!projectDoc.exists()) {
-          console.warn(
-            `Project with ID ${project.id} not found in project-approve. Skipping director update.`
-          );
-        } else {
-          const currentData = projectDoc.data();
-          const currentDirectors = currentData.directors || [];
-
-          let updatedDirectors = [...currentDirectors];
-
-          const existingDirectorIndex = updatedDirectors.findIndex(
-            (director) => director.email === userEmail
-          );
-
-          if (project.selected && existingDirectorIndex === -1) {
-            updatedDirectors.push({
-              email: userEmail,
-              name: userName,
-            });
-          } else if (!project.selected && existingDirectorIndex !== -1) {
-            updatedDirectors.splice(existingDirectorIndex, 1);
-          }
-
-          if (JSON.stringify(updatedDirectors) !== JSON.stringify(currentDirectors)) {
-            await updateDoc(projectRef, {
-              directors: updatedDirectors,
-            });
-          }
-        }
-
-        const availabilityDocRef = doc(db, "project-availability", project.id);
-        if (project.selected) {
-          await setDoc(
-            availabilityDocRef,
-            {
-              usersAvailability: {
-                [userEmail]: { name: userName },
-              },
-            },
-            { merge: true }
-          );
-        } else {
-          try {
-            const availabilityDocSnap = await getDoc(availabilityDocRef);
-            if (availabilityDocSnap.exists()) {
-              await updateDoc(availabilityDocRef, {
-                [`usersAvailability.${userEmail}`]: deleteField(),
-              });
-            }
-          } catch (e) {
-            console.warn(
-              `Could not update project-availability for ${project.id} to remove ${userEmail}. Error:`,
-              e
-            );
-          }
-        }
-      });
-
-      await Promise.all(updatePromises);
-
-      projects = projects.map((project) => {
-        const foundUpdated = updatedProjects.find((up) => up.id === project.id);
-        if (foundUpdated) {
-          return { ...project, selected: foundUpdated.selected };
-        }
-        return project;
-      });
-
-      filteredProjects = filteredProjects.map((project) => {
-        const foundUpdated = updatedProjects.find((up) => up.id === project.id);
-        if (foundUpdated) {
-          return { ...project, selected: foundUpdated.selected };
-        }
-        return project;
-      });
-
-      updateSelectedProjects();
-
-      successToast("บันทึกการเลือกโครงงานเรียบร้อยแล้ว");
-    } catch (err) {
-      console.error("Error saving selection:", err);
-      dangerToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง " + err);
-    } finally {
-      saving = false;
-      loading = false;
-    }
+  if (projectLimit !== null && selectedProjects.length > projectLimit) {
+    warningToast(
+      `คุณสามารถเลือกโครงงานได้สูงสุด ${projectLimit} โครงงานเท่านั้น`
+    );
+    return;
   }
+
+  if (!userName) {
+    dangerToast("ไม่พบข้อมูลชื่อผู้ใช้ กรุณาลองใหม่อีกครั้ง");
+    return;
+  }
+
+  saving = true;
+
+  try {
+    loading = true;
+
+    const updatedProjects = projects.map((project) => ({
+      id: project.id,
+      selected: project.selected,
+    }));
+
+    const updatePromises = updatedProjects.map(async (project) => {
+      const projectRef = doc(db, "project-approve", project.id);
+      const projectDoc = await getDoc(projectRef);
+
+      if (!projectDoc.exists()) {
+        console.warn(
+          `Project with ID ${project.id} not found in project-approve. Skipping director update.`
+        );
+      } else {
+        const currentData = projectDoc.data();
+        const currentDirectors = currentData.directors || [];
+
+        let updatedDirectors = [...currentDirectors];
+
+        const existingDirectorIndex = updatedDirectors.findIndex(
+          (director) => director.email === userEmail
+        );
+
+        if (project.selected && existingDirectorIndex === -1) {
+          updatedDirectors.push({
+            email: userEmail,
+            name: userName,
+          });
+        } else if (!project.selected && existingDirectorIndex !== -1) {
+          updatedDirectors.splice(existingDirectorIndex, 1);
+        }
+
+        if (JSON.stringify(updatedDirectors) !== JSON.stringify(currentDirectors)) {
+          await updateDoc(projectRef, {
+            directors: updatedDirectors,
+          });
+        }
+      }
+
+      const availabilityDocRef = doc(db, "project-availability", project.id);
+      if (project.selected) {
+        await setDoc(
+          availabilityDocRef,
+          {
+            usersAvailability: {
+              [userEmail]: { name: userName },
+            },
+          },
+          { merge: true }
+        );
+      } else {
+        try {
+          const availabilityDocSnap = await getDoc(availabilityDocRef);
+          if (availabilityDocSnap.exists()) {
+            await updateDoc(availabilityDocRef, {
+              [`usersAvailability.${userEmail}`]: deleteField(),
+            });
+          }
+        } catch (e) {
+          console.warn(
+            `Could not update project-availability for ${project.id} to remove ${userEmail}. Error:`,
+            e
+          );
+        }
+      }
+    });
+
+    await Promise.all(updatePromises);
+
+    // Update local state with directors changes after successful save
+    projects = projects.map((project) => {
+      const foundUpdated = updatedProjects.find((up) => up.id === project.id);
+      if (foundUpdated) {
+        let updatedDirectors = [...(project.directors || [])];
+        
+        const existingDirectorIndex = updatedDirectors.findIndex(
+          (director) => director.email === userEmail
+        );
+        
+        if (foundUpdated.selected && existingDirectorIndex === -1) {
+          // Add current user as director
+          updatedDirectors.push({
+            email: userEmail,
+            name: userName,
+          });
+        } else if (!foundUpdated.selected && existingDirectorIndex !== -1) {
+          // Remove current user from directors
+          updatedDirectors = updatedDirectors.filter(
+            (director) => director.email !== userEmail
+          );
+        }
+        
+        return { 
+          ...project, 
+          selected: foundUpdated.selected,
+          directors: updatedDirectors
+        };
+      }
+      return project;
+    });
+
+    filteredProjects = filteredProjects.map((project) => {
+      const foundUpdated = updatedProjects.find((up) => up.id === project.id);
+      if (foundUpdated) {
+        let updatedDirectors = [...(project.directors || [])];
+        
+        const existingDirectorIndex = updatedDirectors.findIndex(
+          (director) => director.email === userEmail
+        );
+        
+        if (foundUpdated.selected && existingDirectorIndex === -1) {
+          // Add current user as director
+          updatedDirectors.push({
+            email: userEmail,
+            name: userName,
+          });
+        } else if (!foundUpdated.selected && existingDirectorIndex !== -1) {
+          // Remove current user from directors
+          updatedDirectors = updatedDirectors.filter(
+            (director) => director.email !== userEmail
+          );
+        }
+        
+        return { 
+          ...project, 
+          selected: foundUpdated.selected,
+          directors: updatedDirectors
+        };
+      }
+      return project;
+    });
+
+    updateSelectedProjects();
+
+    successToast("บันทึกการเลือกโครงงานเรียบร้อยแล้ว");
+  } catch (err) {
+    console.error("Error saving selection:", err);
+    dangerToast("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง " + err);
+  } finally {
+    saving = false;
+    loading = false;
+  }
+}
 </script>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-extrabold text-gray-900">เลือกเป็นกรรมการโครงงาน</h1>
+    <h1 class="text-2xl font-extrabold text-gray-900">เลือกเป็นกรรมการโครงงาน</h1>
     <button
       on:click={openHelpModalManually}
       class="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 py-2 px-3 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors"

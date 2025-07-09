@@ -17,6 +17,7 @@ function formatDocData(doc) {
     adviser: Array.isArray(docData?.adviser) ? docData.adviser : [],
     directors: docData?.directors || [],
     email: docData?.email || "",
+    score_from_subject_teacher: docData?.score_from_subject_teacher || 0,
   };
 }
 
@@ -61,7 +62,8 @@ export async function GET({ url }) {
       'term',
       'adviser',
       'directors',
-      'email'
+      'email',
+      'score_from_subject_teacher'
     ];
 
     // สร้าง query conditions

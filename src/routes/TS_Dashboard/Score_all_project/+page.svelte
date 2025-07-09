@@ -113,21 +113,6 @@
     }
   }
 
-  function getAdviserNames(advisers) {
-    if (!advisers || advisers.length === 0) return '-';
-    return advisers.map(a => a.name || 'N/A').join(', ');
-  }
-
-  function getDirectorNames(directors) {
-    if (!directors || directors.length === 0) return '-';
-    return directors.map(d => d.name || 'N/A').join(', ');
-  }
-
-  function getSubjectTeacherNames(subjectTeachers) {
-    if (!subjectTeachers || subjectTeachers.length === 0) return '-';
-    return subjectTeachers.map(s => s.name || 'N/A').join(', ');
-  }
-
   function showTooltip(event, text) {
     tooltipText = text;
     tooltipX = event.pageX + 10; 
@@ -162,13 +147,6 @@
     const totalScore = allScores.reduce((sum, score) => sum + score, 0);
     return totalScore 
   }
-
-  // Function to get the maximum possible score
-  function getMaxPossibleScore() {
-    const { subjectScoreLimit, directorScoreLimit, adviserScoreLimit } = selectedTermScoreLimits;
-    return Math.max(subjectScoreLimit, directorScoreLimit, adviserScoreLimit);
-  }
-  
 </script>
 
 <div class="min-h-screen bg-gray-50 py-6 px-4">
@@ -335,25 +313,18 @@
                   <!-- Subject Scores -->
                   <td class="px-3 py-3 text-sm text-center bg-gray-100">
                     <div class="font-medium text-orange-600 flex flex-wrap justify-center gap-1">
-                      {#if project.subjectTeachers && project.subjectTeachers.length > 0}
-                        {#each project.subjectTeachers as teacher}
-                          {#if teacher.score !== undefined && teacher.score !== null}
+                      {#if project.score_from_subject_teacher }
+                       
+                          {#if project.score_from_subject_teacher !== undefined && project.score_from_subject_teacher !== null}
                             <span
-                              on:mouseenter={(e) => showTooltip(e, teacher.name || teacher.email)}
-                              on:mouseleave={hideTooltip}
                               class="cursor-default"
-                            >{teacher.score}</span>
+                            >{project.score_from_subject_teacher }</span>
                           {:else}
                             <span
-                              on:mouseenter={(e) => showTooltip(e, teacher.name || teacher.email)}
-                              on:mouseleave={hideTooltip}
                               class="cursor-default"
                             >-</span>
                           {/if}
-                          {#if teacher !== project.subjectTeachers[project.subjectTeachers.length - 1]}
-                            ,
-                          {/if}
-                        {/each}
+                        
                       {:else}
                         -
                       {/if}
@@ -399,7 +370,6 @@
 
                   <!-- Directors -->
                   <td class="px-3 py-3 text-sm text-gray-700 max-w-xs">
-                    {console.log(project.directors)}
                     <div class="text-sm text-gray-700 flex items-center space-x-1">
 												<span>{project.directors[0]?.name || 'ยังไม่มีกรรมการ' || 'N/A'}</span>
 

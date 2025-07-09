@@ -104,7 +104,6 @@
     function selectVersion(versionId) {
       activeMainView = versionId;
       selectedVersion = versionId;
-      
       if (versionId === 'current') {
         project = currentProject;
       } else {
@@ -589,7 +588,7 @@
                 <!-- Only Process component -->
                   <div class="bg-white shadow-lg rounded-lg p-6">
                       <h2 class="text-xl font-semibold text-gray-800 mb-4">สถานะและการดำเนินการ</h2>
-                      <Process {project} isLoading={false} can_edit_task={can_edit_tasks} Task={termTasks} isLoadingtext={false} {visibleStates} {status} {projectId} {comment} {role} />
+                      <Process {project} isLoading={false} can_edit_task={activeMainView === 'current' ? can_edit_tasks : false}  Task={termTasks} isLoadingtext={false} {visibleStates} {status} {projectId} {comment} {role} />
                   </div>
               {:else if canViewDirectorScores}
                 <!-- Only Director scores -->
