@@ -134,9 +134,7 @@
       .map(d => d.score)
       .filter(score => score !== undefined && score !== null && typeof score === 'number');
 
-    const subjectScores = (project.subjectTeachers || [])
-      .map(s => s.score)
-      .filter(score => score !== undefined && score !== null && typeof score === 'number');
+    const subjectScores = [project.score_from_subject_teacher || 0]
 
     const allScores = [...adviserScores, ...directorScores, ...subjectScores];
 

@@ -2,8 +2,8 @@
     import { onMount } from "svelte";
     import { page } from "$app/stores";
     import { verifyJWT } from "$lib/jwt";
-    import {  doc,  getDoc } from 'firebase/firestore';
-    import { db } from "$lib/firebase";
+    import { dangerToast, successToast, warningToast } from "$lib/customtoast";
+    import Loading from "$lib/components/loading.svelte";
 
     let error = "";
     let projectId = "";
@@ -11,16 +11,14 @@
     let isLoading = true;
     let maxScore = 0;
     let currentScore = 0;
-    let feedback = "";
     let isSaving = false;
-    let saveMessage = "";
     let projectname = "";
 
     onMount(async () => {
         const token = $page.url.searchParams.get('projectId');
         if (!token) {
             console.error('No token found in URL');
-            error = 'ไม่พบข้อมูลโครงงาน';
+            dangerToast(`ไม่พบข้อมูลโครงงาน`);
             isLoading = false;
             return;
         }
@@ -34,7 +32,7 @@
             
         } catch (err) {
             console.error('Invalid or expired token:', err);
-            error = 'ข้อมูลโครงงานไม่ถูกต้อง หรือหมดอายุ';
+            dangerToast(`ข้อมูลโครงงานไม่ถูกต้อง หรือหมดอายุ ${error}`);
             isLoading = false;
             return;
         }
@@ -53,7 +51,7 @@
             isLoading = false;
         } catch (error) {
             console.error('Error loading data:', error);
-            error = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+            dangerToast(`เกิดข้อผิดพลาดในการโหลดข้อมูล ${error}` );
             isLoading = false;
         }
     });
@@ -76,12 +74,11 @@
 
     async function saveProjectScore() {
         if (currentScore < 0 || currentScore > maxScore) {
-            alert(`คะแนนต้องอยู่ระหว่าง 0 ถึง ${maxScore}`);
+            warningToast(`คะแนนต้องอยู่ระหว่าง 0 ถึง ${maxScore}`);
             return;
         }
 
         isSaving = true;
-        saveMessage = "";
 
         try {
 
@@ -97,378 +94,130 @@
             });
 
             if (response.ok) {
-                saveMessage = "บันทึกข้อมูลสำเร็จ";
-                setTimeout(() => {
-                    saveMessage = "";
-                }, 3000);
+                successToast("บันทึกข้อมูลสำเร็จ");
             } else {
                 throw new Error('API Error');
             }
         } catch (error) {
             console.error('Error saving score:', error);
-            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            dangerToast(`เกิดข้อผิดพลาดในการบันทึกข้อมูล ${error}`);
         } finally {
             isSaving = false;
         }
     }
 
+    function goBack() {
+        window.history.back();
+    }
+
 </script>
 
-<div class="container">
+<div class="h-[calc(100vh-7rem)] bg-white flex items-center justify-center p-4 relative">
+    <!-- Back Button -->
+    <button 
+        class="absolute top-6 left-6 z-10 group flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+        on:click={goBack}
+    >
+        <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16l-4-4m0 0l4-4m-4 4h18"/>
+        </svg>
+        <span>ย้อนกลับ</span>
+    </button>
+
     {#if isLoading}
-        <div class="loading">
-            <div class="spinner"></div>
-            <p>กำลังโหลดข้อมูล...</p>
-        </div>
-    {:else if error}
-        <div class="error">
-            <h2>เกิดข้อผิดพลาด</h2>
-            <p>{error}</p>
+        <div class="flex flex-col items-center gap-4">
+            <Loading />
         </div>
     {:else}
-        <div class="scoring-form">
-            <h1>ให้คะแนนโปรเจค</h1>
-            
-            <div class="project-info">
-                <div class="info-item">
-                    <label>ชื่อโครงงาน :</label>
-                    <span>{projectname}</span>
-                </div>
-          
-                <div class="info-item">
-                    <label>คะแนนเต็ม :</label>
-                    <span>{maxScore} คะแนน</span>
-                </div>
+        <div class="w-full max-w-4xl">
+            <!-- Header -->
+            <div class="text-center mb-16">
+           
+                <h1 class="text-2xl font-light text-gray-900">ให้คะแนนโครงงาน</h1>
             </div>
 
-            <div class="score-section">
-                <div class="score-input-group">
-                    <label for="score">คะแนน:</label>
-                    <input 
-                        type="number" 
-                        id="score"
-                        min="0" 
-                        max={maxScore}
-                        bind:value={currentScore}
-                        class="score-input"
-                    />
-                    <span class="score-limit">/ {maxScore}</span>
-                </div>
-
-                <div class="score-slider">
-                    <input 
-                        type="range" 
-                        min="0" 
-                        max={maxScore}
-                        bind:value={currentScore}
-                        class="slider"
-                    />
-                </div>
-
-            </div>
-
-            <div class="action-section">
-                <button 
-                    class="save-btn" 
-                    on:click={saveProjectScore}
-                    disabled={isSaving}
-                >
-                    {#if isSaving}
-                        <span class="btn-spinner"></span>
-                        กำลังบันทึก...
-                    {:else}
-                        บันทึกคะแนนโปรเจค
-                    {/if}
-                </button>
-
-                {#if saveMessage}
-                    <div class="save-message success">
-                        {saveMessage}
+            <!-- Main Content -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                <!-- Left Side - Scoring Section -->
+                <div class="order-2 md:order-2">
+                    <!-- Score Input -->
+                    <div class="mb-12">
+                        <div class="relative">
+                            <input 
+                                type="number" 
+                                min="0" 
+                                max={maxScore}
+                                bind:value={currentScore}
+                                class="w-full text-center text-6xl font-extralight text-gray-900 bg-transparent border-none outline-none placeholder-gray-300"
+                                placeholder="0"
+                            />
+                            <div class="absolute inset-x-0 bottom-0 h-px bg-gray-200"></div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <span class="text-sm text-gray-400">จาก {maxScore} คะแนน</span>
+                        </div>
                     </div>
-                {/if}
+
+
+                    <!-- Action Button -->
+                    <div class="text-center">
+                        <button 
+                            class="group relative w-full py-4 text-sm shadow-lg font-medium text-gray-900 bg-white border border-gray-200 hover:border-gray-300 transition-all duration-200 disabled:text-gray-400 disabled:border-gray-100 disabled:cursor-not-allowed"
+                            on:click={saveProjectScore}
+                            disabled={isSaving}
+                        >
+                            <div class="flex items-center justify-center gap-3 ">
+                                {#if isSaving}
+                                    <div class="w-4 h-4 border border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                                    <span>กำลังบันทึก</span>
+                                {:else}
+                                    <span>บันทึกคะแนน</span>
+                                    <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                                    </svg>
+                                {/if}
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="text-center mt-8">
+                        <p class="text-xs text-gray-400">ตรวจสอบคะแนนก่อนบันทึก</p>
+                    </div>
+                </div>
+
+                <!-- Right Side - Project Information -->
+                <div class="order-1 md:order-1">
+                    <div class="space-y-8">
+                        <div>
+                            <h2 class="text-xs uppercase tracking-wide text-gray-400 mb-2">โครงงาน</h2>
+                            <p class="text-xl font-light text-gray-900 leading-relaxed">{projectname}</p>
+                        </div>
+                        
+                        <div class="h-px bg-gray-100"></div>
+                        
+                        <div>
+                            <h3 class="text-xs uppercase tracking-wide text-gray-400 mb-2">คะแนนเต็ม</h3>
+                            <p class="text-3xl font-extralight text-gray-900">{maxScore}</p>
+                        </div>
+                    
+                    </div>
+                </div>
             </div>
         </div>
     {/if}
 </div>
 
 <style>
-    .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-        font-family: 'Kanit', sans-serif;
-    }
 
-    .loading {
-        text-align: center;
-        padding: 40px;
-    }
-
-    .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #3498db;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 20px;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    .error {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 20px;
-        border-radius: 8px;
-        text-align: center;
-    }
-
-    .scoring-form {
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
-        text-align: center;
-        color: #2c3e50;
-        margin-bottom: 30px;
-        font-size: 2rem;
-    }
-
-    .project-info {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 30px;
-    }
-
-    .info-item {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 10px;
-        padding: 8px 0;
-        border-bottom: 1px solid #e9ecef;
-    }
-
-    .info-item:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-    }
-
-    .info-item label {
-        font-weight: 600;
-        color: #495057;
-    }
-
-    .info-item span {
-        color: #6c757d;
-    }
-
-    .score-section {
-        margin-bottom: 30px;
-    }
-
-    .score-input-group {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-
-    .score-input-group label {
-        font-weight: 600;
-        color: #495057;
-        min-width: 80px;
-    }
-
-    .score-input {
-        padding: 8px 12px;
-        border: 2px solid #e9ecef;
-        border-radius: 6px;
-        font-size: 1.1rem;
-        width: 100px;
-        text-align: center;
-    }
-
-    .score-input:focus {
-        outline: none;
-        border-color: #3498db;
-    }
-
-    .score-limit {
-        font-size: 1.1rem;
-        color: #6c757d;
-        font-weight: 600;
-    }
-
-    .score-slider {
-        margin-bottom: 20px;
-    }
-
-    .slider {
-        width: 100%;
-        height: 6px;
-        border-radius: 3px;
-        background: #e9ecef;
-        outline: none;
+    /* Remove input number arrows */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
         -webkit-appearance: none;
+        margin: 0;
     }
 
-    .slider::-webkit-slider-thumb {
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: #3498db;
-        cursor: pointer;
-    }
-
-    .slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: #3498db;
-        cursor: pointer;
-        border: none;
-    }
-
-    .score-display {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .score-bar {
-        flex: 1;
-        height: 20px;
-        background: #e9ecef;
-        border-radius: 10px;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .score-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
-        transition: width 0.3s ease;
-    }
-
-    .score-percentage {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #2c3e50;
-        min-width: 50px;
-    }
-
-    .feedback-section {
-        margin-bottom: 30px;
-    }
-
-    .feedback-section label {
-        display: block;
-        margin-bottom: 10px;
-        font-weight: 600;
-        color: #495057;
-    }
-
-    .feedback-textarea {
-        width: 100%;
-        padding: 12px;
-        border: 2px solid #e9ecef;
-        border-radius: 6px;
-        font-family: inherit;
-        font-size: 1rem;
-        resize: vertical;
-        min-height: 100px;
-    }
-
-    .feedback-textarea:focus {
-        outline: none;
-        border-color: #3498db;
-    }
-
-    .action-section {
-        text-align: center;
-    }
-
-    .save-btn {
-        background: #3498db;
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 6px;
-        font-size: 1.1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .save-btn:hover:not(:disabled) {
-        background: #2980b9;
-    }
-
-    .save-btn:disabled {
-        background: #95a5a6;
-        cursor: not-allowed;
-    }
-
-    .btn-spinner {
-        border: 2px solid transparent;
-        border-top: 2px solid white;
-        border-radius: 50%;
-        width: 16px;
-        height: 16px;
-        animation: spin 1s linear infinite;
-    }
-
-    .save-message {
-        margin-top: 15px;
-        padding: 10px;
-        border-radius: 6px;
-        font-weight: 600;
-    }
-
-    .save-message.success {
-        background: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-
-    @media (max-width: 600px) {
-        .container {
-            padding: 10px;
-        }
-
-        .scoring-form {
-            padding: 20px;
-        }
-
-        .score-input-group {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .score-input-group label {
-            min-width: auto;
-            margin-bottom: 5px;
-        }
-
-        .score-display {
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .score-percentage {
-            text-align: center;
-        }
+    input[type="number"] {
+        -moz-appearance: textfield;
     }
 </style>
