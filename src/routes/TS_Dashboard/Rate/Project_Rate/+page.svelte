@@ -135,11 +135,8 @@
                 totalAdviserScoreLimit = Number(openForm.adviserScoreLimit ?? 0);
 
                 // Calculate the score limit for each director
-                const numberOfDirectors = projectData?.directors?.length || 1;
-                perDirectorMaxScore = parseFloat((totalDirectorScoreLimit / numberOfDirectors).toFixed(2));
-
-                const numberOfAdvisers = projectData?.adviser?.length || 1;
-                perAdviserMaxScore = parseFloat((totalAdviserScoreLimit / numberOfAdvisers).toFixed(2));
+                perDirectorMaxScore = totalDirectorScoreLimit ;
+                perAdviserMaxScore = totalAdviserScoreLimit ;
             }
         } catch (err) {
             console.error("Error fetching form settings:", err);
@@ -333,9 +330,9 @@
                                 <label for="rating" class="block">
                                     <span class="text-lg font-semibold text-gray-900">คะแนน</span>
                                     {#if roleForRating === 'director'}
-                                        <span class="text-sm text-gray-500 ml-2">(เต็ม {currentUserMaxScore} คะแนน, จาก {totalDirectorScoreLimit} คะแนน หาร {projectData?.directors?.length || 1} คน)</span>
+                                        <span class="text-sm text-gray-500 ml-2">(เต็ม {currentUserMaxScore} คะแนน )</span>
                                     {:else if roleForRating === 'adviser'}
-                                        <span class="text-sm text-gray-500 ml-2">(เต็ม {currentUserMaxScore} คะแนน , จาก {totalAdviserScoreLimit} คะแนน หาร {projectData?.adviser?.length || 1} คน)</span>
+                                        <span class="text-sm text-gray-500 ml-2">(เต็ม {currentUserMaxScore} คะแนน )</span>
                                     {/if}
                                     <span class="text-red-500 ml-1">*</span>
                                 </label>

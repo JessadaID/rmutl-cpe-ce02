@@ -5,6 +5,9 @@
     import Loading from "$lib/components/loading.svelte";
     import { auth } from '$lib/firebase'; // Assuming this is your CLIENT-SIDE Firebase auth instance
     import { onAuthStateChanged } from 'firebase/auth';
+    import MemberTooltip from "$lib/components/memberTooltip.svelte";
+    import TeacherTooltip from "$lib/components/teacherTooltip.svelte";
+  import { dangerToast } from "$lib/customtoast";
 
     let currentUserEmail = null;
     let isLoading = true; // Start in loading state
@@ -14,7 +17,7 @@
 
     async function fetchUserProjects(email) {
         if (!email) {
-            errorMessage = "User email is not available to fetch projects.";
+            dangerToast(`User email is not available to fetch projects.`)
             isLoading = false;
             return;
         }
@@ -64,14 +67,14 @@
 
             } else {
                 // No open form or term found
-                errorMessage = "ไม่พบภาคการศึกษาที่เปิดให้เลือกโครงงาน";
+                dangerToast("ไม่พบภาคการศึกษาที่เปิดให้เลือกโครงงาน")
                 projects = []; // Ensure projects is empty
                 selectedTerm = null; // Ensure selectedTerm is null
             }
 
         } catch (err) {
             console.error("Error fetching projects:", err);
-            errorMessage = "An error occurred while fetching projects. Please check your network connection.";
+            dangerToast(`ERROR : ${err.message}}`)
         } finally {
             isLoading = false;
         }
@@ -86,7 +89,6 @@
             } else {
                 // User is signed out
                 currentUserEmail = null;
-                errorMessage = "Please log in to view your projects.";
                 isLoading = false;
             }
         });
@@ -97,7 +99,7 @@
 
     async function viewProjectDetails(projectId) {
         if (!projectId) {
-            errorMessage = "Project ID is missing.";
+            dangerToast("Project ID is missing.");
             return;
         }
         try {
@@ -106,44 +108,38 @@
             goto(`/cpe02/data/term/project-detail?token=${token}`);
         } catch (err) {
             console.error('Error creating JWT or navigating:', err);
-            errorMessage = "Could not navigate to project details.";
+            dangerToast("Could not navigate to project details.");
         }
     }
 
-    function getStatusClass(status) {
-        switch (status?.toLowerCase()) {
-            case 'approve':
-                return 'bg-green-100 text-green-800';
-            case 'improvement':
-                return 'bg-yellow-100 text-yellow-800';
-            case 'wait':
-                return 'bg-blue-100 text-blue-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    }
-
-    function getStatusText(status) {
-        switch (status?.toLowerCase()) {
-            case 'approve':
-                return 'อนุมัติ';
-            case 'improvement':
-                return 'ปรับปรุง';
-            case 'wait':
-                return 'รอการอนุมัติ';
-            default:
-                return status || 'ไม่ระบุ';
-        }
-    }
+     /**
+	 * Gets a formatted status text based on status and taskIndex
+	 * @param {string} status - The status value
+	 * @param {number} taskIndex - The task index number
+	 * @returns {string} Formatted status text in Thai
+	 */
+	function getFormattedStatus(status, taskIndex) {
+		const round = taskIndex + 1; // Convert to 1-based for display
+		
+		if (status === 'approve') {
+			return `อนุมัติงานที่ ${round}`;
+		} else if (status === 'wait') {
+			return `รออนุมัติงานที่ ${round}`;
+		} else if (status === 'improvement') {
+			return `แก้ไขงานที่ ${round}`;
+		} else {
+			return 'ไม่ระบุ';
+		}
+	}
 
     /**
 	 * Gets the status from the latest task in the project.Tasks object.
 	 * @param {object} tasks - The project.Tasks object (e.g., { "0": { status: "...", ... }, "1": { status: "...", ... } }).
-	 * @returns {string} The status string (e.g., "approve", "wait") or "ไม่ระบุ".
+	 * @returns {object} An object containing the status and taskIndex.
 	 */
 	function getLatestTaskStatus(tasks) {
 		if (!tasks || typeof tasks !== 'object' || Object.keys(tasks).length === 0) {
-			return 'wait'; // Default status if no tasks or tasks is not an object
+			return { status: 'wait', taskIndex: 0 }; // Default if no tasks or tasks is not an object
 		}
 		const taskIndices = Object.keys(tasks)
 			.map(Number) // Convert keys to numbers
@@ -151,11 +147,14 @@
 			.sort((a, b) => a - b); // Sort numerically
 
 		if (taskIndices.length === 0) {
-			return 'wait'; // No valid numeric keys
+			return { status: 'wait', taskIndex: 0 }; // No valid numeric keys
 		}
 
 		const latestTaskIndex = taskIndices[taskIndices.length - 1];
-		return tasks[latestTaskIndex]?.status || 'wait';
+		return { 
+			status: tasks[latestTaskIndex]?.status || 'wait', 
+			taskIndex: latestTaskIndex 
+		};
 	}
 </script>
 
@@ -172,11 +171,6 @@
     {#if isLoading}
         <div class="flex items-center justify-center h-64">
             <Loading />
-        </div>
-    {:else if errorMessage}
-        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4  shadow-md max-w-lg mx-auto" role="alert">
-            <p class="font-bold">เกิดข้อผิดพลาด</p>
-            <p>{errorMessage}</p>
         </div>
     {:else if projects.length > 0}
         <div class="space-y-10">
@@ -223,22 +217,61 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                             {#if project.members && project.members.length > 0}
-                                                {project.members.join(', ')}
+                                            <div class="text-sm text-gray-700 flex items-center space-x-1">
+                                                    <span>{project.members[0] || 'N/A'}</span>
+                                                        <MemberTooltip members={project.members} />
+                                            </div>
+
                                             {:else}
-                                                <span class="text-gray-400 italic">ไม่มี</span>
+                                                <span class="text-sm text-gray-500">ไม่มี</span>
                                             {/if}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                             {#if project.adviser && project.adviser.length > 0}
-                                                {project.adviser.map(adv => adv.name || adv).join(', ')}
+                                            <div class="text-sm text-gray-700 flex items-center space-x-1">
+                                                    <span>{project.adviser[0].name || 'N/A'}</span>
+                                                        <TeacherTooltip members={project.adviser} />
+                                            </div>
+
                                             {:else}
-                                                <span class="text-gray-400 italic">ไม่มี</span>
+                                                <span class="text-sm text-gray-500">ไม่มี</span>
                                             {/if}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {getStatusClass(getLatestTaskStatus(project.Tasks))}">
-                                                {getStatusText(getLatestTaskStatus(project.Tasks))}
-                                            </span>
+                                            {#if project.Tasks}
+                                                    {@const taskStatus = getLatestTaskStatus(project.Tasks)}
+                                                    {#if taskStatus.status === 'approve'}
+                                                        <span
+                                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
+                                                        >
+                                                            {getFormattedStatus(taskStatus.status, taskStatus.taskIndex)}
+                                                        </span>
+                                                    {:else if taskStatus.status === 'wait'}
+                                                        <span
+                                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"
+                                                        >
+                                                            {getFormattedStatus(taskStatus.status, taskStatus.taskIndex)}
+                                                        </span>
+                                                    {:else if taskStatus.status === 'improvement'}
+                                                        <span
+                                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800"
+                                                        >
+                                                            {getFormattedStatus(taskStatus.status, taskStatus.taskIndex)}
+                                                        </span>
+                                                    {:else}
+                                                        <span
+                                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800"
+                                                        >
+                                                            ไม่ระบุ
+                                                        </span>
+                                                    {/if}
+                                                {:else}
+                                                    <span
+                                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800"
+                                                    >
+                                                        ไม่ระบุ
+                                                    </span>
+                                                {/if}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <button

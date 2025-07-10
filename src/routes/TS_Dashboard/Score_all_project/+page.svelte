@@ -124,27 +124,45 @@
     tooltipVisible = false;
   }
 
-  // Function to calculate overall average score from all three score types
-  function calculateOverallAverage(project) {
-    const adviserScores = (project.adviser || [])
-      .map(a => a.score)
-      .filter(score => score !== undefined && score !== null && typeof score === 'number');
+  // Function to calculate overall average score with grouped averaging
+function calculateOverallAverage(project) {
+  const adviserScores = (project.adviser || [])
+    .map(a => a.score)
+    .filter(score => score !== undefined && score !== null && typeof score === 'number');
 
-    const directorScores = (project.directors || [])
-      .map(d => d.score)
-      .filter(score => score !== undefined && score !== null && typeof score === 'number');
+  const directorScores = (project.directors || [])
+    .map(d => d.score)
+    .filter(score => score !== undefined && score !== null && typeof score === 'number');
 
-    const subjectScores = [project.score_from_subject_teacher || 0]
+  const subjectScores = [project.score_from_subject_teacher || 0]
+    .filter(score => score !== undefined && score !== null && typeof score === 'number');
 
-    const allScores = [...adviserScores, ...directorScores, ...subjectScores];
+  // Calculate averages for each group
+  const adviserAverage = adviserScores.length > 0 
+    ? adviserScores.reduce((sum, score) => sum + score, 0) / adviserScores.length 
+    : null;
 
-    if (allScores.length === 0) {
-      return null;
-    }
+  const directorAverage = directorScores.length > 0 
+    ? directorScores.reduce((sum, score) => sum + score, 0) / directorScores.length 
+    : null;
 
-    const totalScore = allScores.reduce((sum, score) => sum + score, 0);
-    return totalScore 
+  const subjectAverage = subjectScores.length > 0 
+    ? subjectScores.reduce((sum, score) => sum + score, 0) / subjectScores.length 
+    : null;
+
+  // Collect all group averages
+  const groupAverages = [adviserAverage, directorAverage, subjectAverage]
+    .filter(avg => avg !== null);
+
+  if (groupAverages.length === 0) {
+    return null;
   }
+
+  // Calculate final average from group averages
+  const finalAverage = groupAverages.reduce((sum, avg) => sum + avg, 0);
+  
+  return finalAverage;
+}
 </script>
 
 <div class="min-h-screen bg-gray-50 py-6 px-4">
