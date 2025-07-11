@@ -12,7 +12,7 @@
     import { onMount } from "svelte";
     import ConfirmModal from '$lib/components/ConfirmModal.svelte';
     import Modal from '$lib/components/Modal.svelte'; // Import the Modal component
-    import { dangerToast } from "$lib/customtoast.js";
+    import { dangerToast, warningToast } from "$lib/customtoast.js";
     import Loading from "$lib/components/loading.svelte";
     import { successToast } from "$lib/customtoast.js";
 
@@ -29,7 +29,7 @@
     let adviserScoreLimitValue = 0; // For adviserScoreLimit
     let subjectScoreLimitValue = 0; // For subjectScoreLimit
     let isCheckedLastermTask = false; // For the checkbox
-
+    let max_score = 100;
     let modalTitle = "";
     
     let messageBody = "";
@@ -87,7 +87,7 @@
       currentTermName = "";
       currentProjectLimit = 5; // Default project limit for new terms
       currentDirectorScoreLimit = 40; // Default director score limit
-      adviserScoreLimitValue = 40; // Default adviser score limit
+      adviserScoreLimitValue = 30; // Default adviser score limit
       subjectScoreLimitValue = 30; // Default subject score limit
       currentEditingTerm = null;
       showTermModal = true;
@@ -138,9 +138,16 @@
       };
       showConfirmModal = true;
     }
+
+
     async function processUpdateTerm(updatedName: string, projectLimit: number | null, directorScoreLimit: number | null , adviserScoreLimitValue: number | null = 0, subjectScoreLimitValue: number | null = 0) {
       if (!currentEditingTerm || !updatedName.trim()) return;
-  
+      console.log((directorScoreLimit || 0) + (adviserScoreLimitValue || 0) + (subjectScoreLimitValue || 0) > max_score)
+      
+      if ((directorScoreLimit || 0) + (adviserScoreLimitValue || 0) + (subjectScoreLimitValue || 0) > max_score){
+        warningToast("กรุณาให้คะแนนอยู่ในช่วง 0-100")
+        return;
+      }
       loading = true;
       try {
         const termRef = doc(db, "forms", currentEditingTerm.id);
@@ -166,6 +173,11 @@
 
     async function processCreateTerm(newTermName: string, projectLimit: number | null, directorScoreLimit: number | null, adviserScoreLimitValue: number | null = 0, subjectScoreLimitValue: number | null = 0) {
   if (!newTermName.trim()) return;
+
+  if (((directorScoreLimit || 0) + (adviserScoreLimitValue || 0) + (subjectScoreLimitValue || 0)) > max_score){
+        warningToast("กรุณาให้คะแนนอยู่ในช่วง 0-100")
+        return;
+      }
 
   loading = true;
   try {
