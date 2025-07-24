@@ -79,35 +79,47 @@
   // --------- Data Loading Functions ---------
   
   /**
-   * โหลดข้อมูลโปรเจกต์จาก Firestore
+   * โหลดข้อมูลโปรเจกต์จาก API
    */
   async function loadProjectData() {
     try {
-      const projectDoc = await getDoc(doc(db, "project-approve", projectId));
-      
-      if (projectDoc.exists()) {
-        project = projectDoc.data();
+      const res = await fetch(`/api/project-data/${projectId}`);
 
-        // Initialize Operation_Schedule if it's missing
-        if (!project.Operation_Schedule) {
-          project.Operation_Schedule = {
-            tableTitle: "แผนและระยะเวลาดำเนินงาน (เดือน / พ.ศ.)",
-            monthLabels: ["ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.", "ม.ค.", "ก.พ."],
-            activities: [], // or some default activities if needed
-          };
-        }
-        if (!project.adviser || !Array.isArray(project.adviser)) {
-          project.adviser = [];
-        }
+      if (res.ok) {
+        const responseData = await res.json();
         
-        // Check if no advisers are selected
-        noAdviserYet = project.adviser.length === 0;
-        
-        // Verify access permissions
-        checkAccessPermissions();
+        if (responseData.data) {
+          project = responseData.data;
+
+          // Initialize Operation_Schedule if it's missing
+          if (!project.Operation_Schedule) {
+            project.Operation_Schedule = {
+              tableTitle: "แผนและระยะเวลาดำเนินงาน (เดือน / พ.ศ.)",
+              monthLabels: ["ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.", "ม.ค.", "ก.พ."],
+              activities: [], // or some default activities if needed
+            };
+          }
+          if (!project.adviser || !Array.isArray(project.adviser)) {
+            project.adviser = [];
+          }
+          
+          // Check if no advisers are selected
+          noAdviserYet = project.adviser.length === 0;
+          
+          // Verify access permissions
+          checkAccessPermissions();
+        } else {
+          console.error("Project data not found in API response.");
+          isNotFound = true;
+        }
       } else {
-        console.error("Project not found in Firestore.");
-        isNotFound = true;
+        if (res.status === 404) {
+          console.error("Project not found via API.");
+          isNotFound = true;
+        } else {
+          const errorData = await res.json().catch(() => ({ message: res.statusText }));
+          throw new Error(`Failed to fetch project data: ${errorData.message || res.statusText}`);
+        }
       }
     } catch (error) {
       console.error("Error fetching project data:", error);

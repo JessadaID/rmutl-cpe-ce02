@@ -52,18 +52,13 @@
     async function confirmDeleteProject() {
       if (!projectToDelete) return;
 
-      
-
       try {
         isLoading = true;
-        const Delete_Task = await fetch("/api/tasks-data", {
+        const Delete_Task = await fetch(`/api/tasks-data/${projectToDelete.id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          id: projectToDelete.id,
-        }),
       });
 
       const Delete_Task_data = await Delete_Task.json();
@@ -98,25 +93,19 @@
         alert("กรุณากรอกข้อมูลให้ครบ");
         isLoading = false;
         return;
-    }else if (dueDate < new Date().toISOString().split("T")[0]) {
-        alert("กรุณาเลือกวันที่ใหม่กว่าวันปัจจุบัน");
-        isLoading = false;
-        return;
     }else{
       try {
       if (selectedProject) {
         // หากเลือกโปรเจกต์แล้วให้ทำการอัปเดต
-        const Edit_Task = await fetch("/api/tasks-data", {
+        const Edit_Task = await fetch(`/api/tasks-data/${selectedProject.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            id: selectedProject.id,
             title,
             description,
             dueDate,
-            index: projectCount,
             term,
           }),
         });

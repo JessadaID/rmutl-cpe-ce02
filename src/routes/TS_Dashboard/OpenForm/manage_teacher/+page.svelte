@@ -4,13 +4,13 @@
   import { onMount } from 'svelte';
   import ConfirmModal from '$lib/components/ConfirmModal.svelte';
   import { getrolename } from '$lib/Getrolename';
-  import { get } from 'svelte/store';
+
 
   let teachersFromUsers = [];
   let teachersFromApi = [];
   let loading = true;
   let editingTeacher = null;
-  let editForm = { id:'' ,name: '', email: '' };
+  let editForm = { name: '', email: '' };
 
   // State for manual teacher addition modal
   let showManualAddModal = false;
@@ -75,7 +75,7 @@
 
         //console.log(newTeacher );
         teachersFromApi = [...teachersFromApi, newTeacher];
-        console.log(teachersFromApi);
+        //console.log(teachersFromApi);
         successToast('เพิ่มอาจารย์เรียบร้อยแล้ว');
       } else {
         console.error('Error adding teacher:', response.status);
@@ -94,12 +94,11 @@
     showConfirmModal = true;
     confirmModalOnConfirm = async () => {
         try {
-            const response = await fetch(`/api/teacher-data`, {
+            const response = await fetch(`/api/teacher-data/${teacherId}`, {
                 method: 'DELETE',
                 headers: {
                 'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id: teacherId }),
             });
 
                 if (response.ok) {
@@ -121,7 +120,6 @@
   function startEdit(teacher) {
     editingTeacher = teacher.id;
     editForm = {
-        id: teacher.id || '',
       name: teacher.name || '',
       email: teacher.email || ''
     };
@@ -130,7 +128,7 @@
 
   function cancelEdit() {
     editingTeacher = null;
-    editForm = { id :'' ,name: '', email: '' };
+    editForm = { name: '', email: '' };
     showEditModal = false;
     editInProgress = false;
   }
@@ -147,7 +145,7 @@
 
     editInProgress = true;
     try {
-      const response = await fetch(`/api/teacher-data`, {
+      const response = await fetch(`/api/teacher-data/${editingTeacher}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -161,10 +159,13 @@
           t.id === editingTeacher ? updatedTeacher : t
         );
         cancelEdit();
-        successToast('แก้ไขข้อมูลอาจารย์เรียบร้อยแล้ว');
       } else {
         console.error('Error updating teacher:', response.status);
         dangerToast('เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
+      }
+
+      if (response.status === 200) {
+        successToast('แก้ไขข้อมูลอาจารย์เรียบร้อยแล้ว');
       }
     } catch (error) {
       console.error('Error updating teacher:', error);
