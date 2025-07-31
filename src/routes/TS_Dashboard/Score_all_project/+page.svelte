@@ -140,15 +140,15 @@ function calculateOverallAverage(project) {
   // Calculate averages for each group
   const adviserAverage = adviserScores.length > 0 
     ? adviserScores.reduce((sum, score) => sum + score, 0) / adviserScores.length 
-    : null;
+    : 0;
 
   const directorAverage = directorScores.length > 0 
     ? directorScores.reduce((sum, score) => sum + score, 0) / directorScores.length 
-    : null;
+    : 0;
 
   const subjectAverage = subjectScores.length > 0 
     ? subjectScores.reduce((sum, score) => sum + score, 0) / subjectScores.length 
-    : null;
+    : 0;
 
   // Collect all group averages
   const groupAverages = [adviserAverage, directorAverage, subjectAverage]
@@ -161,7 +161,7 @@ function calculateOverallAverage(project) {
   // Calculate final average from group averages
   const finalAverage = groupAverages.reduce((sum, avg) => sum + avg, 0);
   
-  return finalAverage;
+  return {finalAverage,groupAverages};
 }
 </script>
 
@@ -315,7 +315,7 @@ function calculateOverallAverage(project) {
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               {#each filteredProjects as project, i}
-                {@const currentOverallAverage = calculateOverallAverage(project)}
+                {@const {finalAverage,groupAverages} = calculateOverallAverage(project)}
                 <tr class="hover:bg-gray-50 transition-colors">
                   <!-- Project Name -->
                   <td class="px-3 py-3 text-sm text-gray-900 max-w-xs">
@@ -378,6 +378,7 @@ function calculateOverallAverage(project) {
                             ,
                           {/if}
                         {/each}
+                        <b>({groupAverages[0] || 0})</b>
                       {:else}
                         -
                       {/if}
@@ -415,6 +416,8 @@ function calculateOverallAverage(project) {
                             ,
                           {/if}
                         {/each}
+                        <b>({groupAverages[1] || 0})</b>
+
                       {:else}
                         -
                       {/if}
@@ -423,9 +426,9 @@ function calculateOverallAverage(project) {
 
                   <!-- Overall Average Score -->
                   <td class="px-3 py-3 text-sm text-center bg-gray-200">
-                    {#if currentOverallAverage !== null}
+                    {#if finalAverage !== null}
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
-                        {currentOverallAverage.toFixed(2)}
+                        {finalAverage.toFixed(2)}
                       </span>
                     {:else}
                       <span class="text-gray-400 text-xs">-</span>

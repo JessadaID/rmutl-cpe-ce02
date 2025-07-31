@@ -67,7 +67,15 @@
           throw new Error("ข้อมูลโครงงานไม่ถูกต้อง");
         }
 
-        projects = projectDataResponse.data.map((project) => {
+        // Filter out projects where the current user is an adviser
+        const availableProjects = projectDataResponse.data.filter(
+          (project) => {
+            const advisers = project.adviser || [];
+            return !advisers.some((adviser) => adviser.email === userEmail);
+          }
+        );
+
+        projects = availableProjects.map((project) => {
           const directors = project.directors || [];
           const isDirector = directors.some(
             (director) => director.email === userEmail
@@ -573,8 +581,8 @@
 <HelpModal bind:showModal={showHelpModal} title="วิธีการใช้งานระบบ" onClose={() => (showHelpModal = false)}>
   <h3 class="text-lg font-semibold text-blue-600 mb-2">สำหรับอาจารย์ที่ปรึกษา:</h3>
   <p class="mb-3 text-gray-700">
-    ท่าน<strong>ไม่จำเป็นต้อง</strong>เลือกโครงงานที่ท่านเป็น<strong>อาจารย์ที่ปรึกษา</strong
-    >ในหน้านี้อีกครั้ง ระบบจะทราบข้อมูลของท่านจากรายละเอียดโครงงานโดยอัตโนมัติครับ
+    หน้านี้จะไม่แสดงโครงงานที่ท่านเป็นอาจารย์ที่ปรึกษาอยู่แล้ว
+    ท่านสามารถเลือกเป็น<strong>กรรมการสอบ</strong>ให้กับโครงงานอื่นๆ ที่ท่านสนใจ
   </p>
   <h3 class="text-lg font-semibold text-gray-700 mb-2">หน้านี้ใช้สำหรับ:</h3>
   <p class="text-gray-700">
