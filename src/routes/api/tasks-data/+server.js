@@ -102,15 +102,32 @@ export async function PUT ({ request }) {
 }
 
 export async function DELETE({ request }) {
-    const data = await request.json();
-    const { id } = data;
-    try {
-        const projectCollectionRef = adminDb.collection("Task");
-        const projectRef = projectCollectionRef.doc(id); // Get the document reference by ID
-        await projectRef.delete();
-        return json({ success: true }, { status: 200 });
-    } catch (error) {
-        console.error("Error deleting project:", error);
-        return json({ error: "Failed to delete project" }, { status: 500 });
+  const data = await request.json();
+  const { term } = data; // รับค่า term จาก request body
+
+  // ตรวจสอบว่ามีการส่ง term มาหรือไม่
+  if (!term) {
+    return json({ error: "Term is required for deletion." }, { status: 400 });
+  }
+
+  try {
+    const projectCollectionRef = adminDb.collection("Task");
+    // ค้นหาเอกสารทั้งหมดที่มี term ตรงกับที่ระบุ
+    const query = projectCollectionRef.where("term", "==", term);
+    const snapshot = await query.get();
+
+    if (snapshot.empty) {
+      return json({ success: true, message: `No tasks found for term '${term}'. Nothing to delete.` }, { status: 200 });
     }
+
+    // ใช้ batch operation เพื่อลบเอกสารทั้งหมดทีเดียวเพื่อประสิทธิภาพที่ดีกว่า
+    const batch = adminDb.batch();
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    return json({ success: true, message: `Successfully deleted ${snapshot.size} tasks for term '${term}'.` }, { status: 200 });
+  } catch (error) {
+    console.error(`Error deleting tasks for term '${term}':`, error);
+    return json({ error: "Failed to delete tasks" }, { status: 500 });
+  }
 }
