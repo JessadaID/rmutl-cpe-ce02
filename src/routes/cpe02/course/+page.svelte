@@ -10,7 +10,7 @@
         "ติดต่อและปรึกษาอาจารย์ที่เชี่ยวชาญ",
         "กำหนดหัวข้อที่ชัดเจนร่วมกับอาจารย์ที่ปรึกษา",
       ],
-      icon: "🔍",
+      icon: `<svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-search"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>`,
       color: "blue",
     },
     {
@@ -23,7 +23,7 @@
         "วางแผนการดำเนินงาน (Timeline/Gantt Chart)",
         "จัดทำร่างข้อเสนอโครงงานฉบับสมบูรณ์",
       ],
-      icon: "📝",
+      icon: `<svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-clipboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" /><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /></svg>`,
       color: "purple",
     },
     {
@@ -35,7 +35,7 @@
         "ยื่นข้อเสนอฉบับสมบูรณ์ตามกำหนด",
         "เตรียมตัวสำหรับการนำเสนอข้อเสนอ (ถ้ามี)",
       ],
-      icon: "📤",
+      icon: `<svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-circle-dashed-check"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8.56 3.69a9 9 0 0 0 -2.92 1.95" /><path d="M3.69 8.56a9 9 0 0 0 -.69 3.44" /><path d="M3.69 15.44a9 9 0 0 0 1.95 2.92" /><path d="M8.56 20.31a9 9 0 0 0 3.44 .69" /><path d="M15.44 20.31a9 9 0 0 0 2.92 -1.95" /><path d="M20.31 15.44a9 9 0 0 0 .69 -3.44" /><path d="M20.31 8.56a9 9 0 0 0 -1.95 -2.92" /><path d="M15.44 3.69a9 9 0 0 0 -3.44 -.69" /><path d="M9 12l2 2l4 -4" /></svg>`,
       color: "orange",
     },
     {
@@ -46,7 +46,7 @@
           "รับฟังข้อเสนอแนะและคำถามจากกรรมการ",
           "ดำเนินการแก้ไขข้อเสนอตามมติกรรมการ/อาจารย์ที่ปรึกษา",
       ],
-      icon: "🗣️",
+      icon: `<svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-presentation"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 4l18 0" /><path d="M4 4v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-10" /><path d="M12 16l0 4" /><path d="M9 20l6 0" /><path d="M8 12l3 -3l2 2l3 -3" /></svg>`,
       color: "red",
     },
     {
@@ -57,7 +57,7 @@
           "รอการยืนยันอนุมัติโครงงานอย่างเป็นทางการจากภาควิชา/คณะ",
           "เตรียมพร้อมสำหรับเริ่มดำเนินงานในภาคเรียนถัดไป (หากโครงงานต่อเนื่อง)"
       ],
-      icon: "✅",
+      icon: `<svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-check"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>`,
       color: "green",
     },
   ];
@@ -150,7 +150,7 @@
           {#each proposalTimeline as item, i}
             <div class="text-center">
               <div class="flex items-center justify-center w-12 h-12 {colorConfig[item.color].bg} rounded-full mb-2 mx-auto transition-transform hover:scale-110">
-                <span class="text-xl">{item.icon}</span>
+                <span class="text-xl text-white flex items-center justify-center">{@html item.icon}</span>
               </div>
               <p class="text-xs text-gray-600 font-medium">{item.weeks}</p>
             </div>
@@ -177,7 +177,7 @@
                    on:keydown={(e) => e.key === 'Enter' && toggleItem(i)}
                    tabindex="0"
                    role="button">
-                <span class="text-xl md:text-2xl">{item.icon}</span>
+                <span class="text-xl md:text-2xl text-white flex items-center justify-center">{@html item.icon}</span>
               </div>
             </div>
 
