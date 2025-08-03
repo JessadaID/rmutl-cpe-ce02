@@ -309,13 +309,21 @@
 							{#each filteredProjects as project (project.id)}
 								<tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
 									<!-- Table Data Cells (เหมือนเดิม, รวมถึง tooltip) -->
-									<td class="px-6 py-4 whitespace-nowrap">
-										<div class="text-sm font-medium text-gray-900">
+									<td class="px-6 py-4">
+										<div
+											class="text-sm font-medium text-gray-900 truncate max-w-xs"
+											title={project.project_name_th || ''}
+										>
 											{project.project_name_th || '-'}
 										</div>
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap">
-										<div class="text-sm text-gray-700">{project.project_name_en || '-'}</div>
+									<td class="px-6 py-4">
+										<div
+											class="text-sm text-gray-700 truncate max-w-xs"
+											title={project.project_name_en || ''}
+										>
+											{project.project_name_en || '-'}
+										</div>
 									</td>
 									<td class="px-6 py-4 whitespace-normal">
 										{#if project.members && project.members.length > 0}
