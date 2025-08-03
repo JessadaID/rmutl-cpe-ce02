@@ -47,7 +47,6 @@
   let shouldShowProcessComponent = false;
   let canViewDirectorScores = false;
   let activeTaskView = ""; // 'process' or 'scores', determines which view is active in the right panel
-
   let activeMainView = "current"; // 'current' or 'previous_version'
 
   let form_data;
@@ -323,6 +322,14 @@
       }
     }
   }
+
+  function gotoPdfDriveLink() {
+    if (project.pdfdriveLink) {
+      window.open(project.pdfdriveLink, "_blank");
+    } else {
+      warningToast("ไม่มีลิงก์ PDF สำหรับโครงงานนี้");
+    }
+  }
 </script>
 
 <svelte:head>
@@ -491,7 +498,7 @@
           <!-- Consider adding h-full if content height varies -->
 
           <!-- Project Title -->
-          <div class="mb-6 pb-4 border-b border-gray-200">
+          <div class="mb-6 pb-4 border-b border-gray-200 relative">
             <h1
               class="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 break-all"
             >
@@ -501,6 +508,13 @@
               {project.project_name_en}
             </p>
             <p class="text-sm text-gray-500 mt-1">ภาคเรียน: {project.term}</p>
+            {#if project.pdfdriveLink}
+            <div class="absolute bottom-0 right-0 mb-2 mr-2">
+              <button class="text-sm text-white hover:text-gray-100 focus:outline-none bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md transition-colors" on:click={gotoPdfDriveLink}>
+                ดู PDF
+              </button>
+            </div>
+            {/if}
           </div>
 
           <!-- Project Members & Advisors -->

@@ -37,6 +37,7 @@
   let currentStep = 0;
   let refer = ""; // อ้างอิง
   let budgetItems ; // รายการงบประมาณ
+  let pdfdriveLink = ""; // ลิงก์ Google Drive สำหรับไฟล์ PDF
 
   let selectedFiles = [];
   let imagePreviews = [];
@@ -267,6 +268,7 @@
             ...item,
             amount: parseFloat(item.amount) || 0, // Ensure amount is a number
           })),
+          pdfdriveLink: pdfdriveLink.trim(),
           createdAt: new Date() // Add a timestamp
         });
 
@@ -417,6 +419,7 @@
           bind:benefits
           bind:refer
           bind:budgetItems
+          bind:pdfdriveLink
           />
         </div>
       {/if}
