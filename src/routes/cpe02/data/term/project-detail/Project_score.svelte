@@ -13,12 +13,7 @@
             adviserScoreLimit = Number(currentForm.adviserScoreLimit ?? 0);
         }
         
-        const numberOfDirectors = project?.directors?.length || 0;
-        if (numberOfDirectors > 0) {
-            perDirectorMaxScore = parseFloat((directorScoreLimit / numberOfDirectors).toFixed(2));
-        } else {
-            perDirectorMaxScore = directorScoreLimit;
-        }
+        perDirectorMaxScore = directorScoreLimit;
     }
 </script>
 
@@ -93,7 +88,7 @@
                     {@const totalScore = ratedDirectors.reduce((sum, d) => sum + Number(d.score), 0)}
                     <div class="mt-4 pt-4 border-t border-gray-200">
                         <p class="text-md font-semibold text-gray-700">
-                            คะแนนรวม (กรรมการ): {totalScore} / {ratedDirectors.length * perDirectorMaxScore}
+                            คะแนนเฉลี่ย (กรรมการ): {totalScore/ratedDirectors.length} / {(ratedDirectors.length * perDirectorMaxScore)/project.directors.length}
                             <span class="text-sm text-gray-500"> (จาก {ratedDirectors.length} ท่าน)</span>
                         </p>
                     </div>
