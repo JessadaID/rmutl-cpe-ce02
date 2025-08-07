@@ -2,7 +2,6 @@
     import { onMount } from "svelte";
     import { getCookie } from 'cookies-next';
     import { goto } from '$app/navigation';
-    import { goToProject_Details } from "$lib/NavigateWithToken";
     import Loading from "$lib/components/loading.svelte";
 
     let projects = [];
@@ -113,6 +112,10 @@
 
     function goToAppointmentDetails(projectId) {
         goto(`/TS_Dashboard/Appointment/${projectId}`);
+    }
+
+    function goToProject_Details(project) {
+        goto(`/cpe02/data/term/${project.term}/project-detail/${project.id}`);
     }
 </script>
 

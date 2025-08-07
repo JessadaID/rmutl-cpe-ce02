@@ -1,7 +1,5 @@
 <script>
     import { goto } from "$app/navigation";
-    import { goToProject_Details } from "$lib/NavigateWithToken";
-
     // Receive data from +page.server.js
     export let data;
     
@@ -52,6 +50,10 @@
 
     function goBack() {
         goto('/cpe02');
+    }
+
+    function goToProject_Details(project) {
+        goto(`/cpe02/data/term/${project.term}/project-detail/${project.id}`);
     }
 </script>
 
@@ -139,7 +141,7 @@
                                 {#each filteredProjects as project (project.id)}
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-4 py-4">
-                                            <div class="text-sm text-blue-600 hover:underline cursor-pointer" on:click={() => goToProject_Details(project.id)}>
+                                            <div class="text-sm text-blue-600 hover:underline cursor-pointer" on:click={() => goToProject_Details(project)}>
                                                 {project.project_name_th}
                                             </div>
                                         </td>

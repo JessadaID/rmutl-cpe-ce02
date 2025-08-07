@@ -2,7 +2,6 @@
     import { onMount } from "svelte";
     import { getCookie } from 'cookies-next';
     import { goto } from '$app/navigation';
-    import { goToProject_Details } from "$lib/NavigateWithToken";
     import { createJWT } from "$lib/jwt";
     import Loading from "$lib/components/loading.svelte";
 
@@ -162,6 +161,10 @@
         selectedRole = null;
         filteredProjects = [];
     }
+
+    function goToProject_Details(project) {
+        goto(`/cpe02/data/term/${project.term}/project-detail/${project.id}`);
+    }
 </script>
 
 <div class="max-w-4xl mx-auto">
@@ -266,7 +269,7 @@
                                         <td class="px-6 py-4">
                                             <div
                                                 class="text-blue-600 hover:underline cursor-pointer font-medium"
-                                                on:click={() => goToProject_Details(project.id)}
+                                                on:click={() => goToProject_Details(project)}
                                             >
                                                 {project.project_name_th}
                                             </div>

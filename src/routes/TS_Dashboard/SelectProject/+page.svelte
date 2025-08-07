@@ -8,14 +8,13 @@
     setDoc,
   } from "firebase/firestore";
   import { db } from "$lib/firebase";
-  import { goToProject_Details } from "$lib/NavigateWithToken";
   import { dangerToast, successToast, warningToast } from "$lib/customtoast";
   import { getCookie } from "cookies-next";
   import Loading from "$lib/components/loading.svelte";
   import HelpModal from "$lib/components/HelpModal.svelte";
   import MemberTooltip from "$lib/components/memberTooltip.svelte";
   import TeacherTooltip from "$lib/components/teacherTooltip.svelte";
-
+  import { goto } from "$app/navigation";
   let projects = [];
   let filteredProjects = [];
   let loading = true;
@@ -337,6 +336,10 @@
     loading = false;
   }
 }
+
+function goToProject_Details(project) {
+        goto(`/cpe02/data/term/${project.term}/project-detail/${project.id}`);
+    }
 </script>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -500,7 +503,7 @@
                   <td class="px-6 py-4">
                     <h3
                       class="text-sm text-blue-600 hover:underline cursor-pointer"
-                      on:click={() => goToProject_Details(project.id)}
+                      on:click={() => goToProject_Details(project)}
                     >
                       {project.project_name_th}
                     </h3>
