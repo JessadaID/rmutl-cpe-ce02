@@ -30,6 +30,10 @@ export async function load({ params }) {
         if (project.createdAt && typeof project.createdAt.toDate === 'function') {
         project.createdAt = project.createdAt.toDate().toISOString();
         }
+        if (project.lastUpdated && typeof project.lastUpdated.toDate === 'function') {
+        project.lastUpdated = project.lastUpdated.toDate().toISOString();
+        }
+
         return {
         project,
         projectId,

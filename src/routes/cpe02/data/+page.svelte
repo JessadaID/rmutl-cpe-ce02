@@ -41,7 +41,7 @@
 			{#each data.terms as form}
 				<button
 					on:click={() => navigate(form.term )}
-					class="p-4 sm:p-5 flex-grow mb-1 text-sm leading-relaxed space-y-2 border border-gray-400 bg-gray-50 hover:bg-gray-100 cursor-pointer"
+					class="p-4 sm:p-5 flex-grow mb-1 text-sm leading-relaxed space-y-2 border border-gray-400 bg-gray-50 hover:bg-gray-100 cursor-pointer block w-full text-start"
 				>
 					<strong class="font-medium text-gray-800 mr-1">ภาคการศึกษา :</strong>
 					{form.term || 'ไม่ระบุ'}

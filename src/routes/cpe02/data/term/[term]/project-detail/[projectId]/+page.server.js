@@ -26,6 +26,10 @@ export async function load({ params }) {
     if (project.createdAt && typeof project.createdAt.toDate === 'function') {
       project.createdAt = project.createdAt.toDate().toISOString();
     }
+    if (project.lastUpdated && typeof project.lastUpdated.toDate === 'function') {
+      project.lastUpdated = project.lastUpdated.toDate().toISOString();
+    }
+
     //console.log("Fetched project data:", {project, projectId, isNotFound: false}); // Log fetched project data for debugging
     return {
       project,

@@ -44,6 +44,11 @@
     email = getCookie("email");
     role = getCookie("role");
 
+    if (email != project.email && role !== "admin") {
+      warningToast("คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้");
+      goto("/cpe02/data");
+      return;
+    }
     // Load project data
     await loadProjectData();
 

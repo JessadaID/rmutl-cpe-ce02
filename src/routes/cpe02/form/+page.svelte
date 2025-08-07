@@ -14,12 +14,10 @@
   import Topic7_9 from "./topic7_9.svelte";
   import Topic10_12 from "./topic10_12.svelte";
   import { warningToast , successToast, dangerToast} from "$lib/customtoast";
-  import { verifyJWT , createJWT } from "$lib/jwt.ts"; // Import your JWT verification function
-  import { page } from "$app/stores";
 
-  export let data; // รับค่าจาก `+page.js`
+  export let data; // รับค่าจาก `+page.server.js`
 
-  let term = data.termId; // กำหนดค่า term จาก URL
+  let { term } = data.term; // กำหนดค่า term จาก URL
   let project_name_th = ""; //ชื่อโปรเจค ไทย
   let project_name_en = ""; //ชื่อโปรเจค eng
   let adviser = []; // ที่ปรึกษา
@@ -183,7 +181,6 @@
 
   onMount(async () => {
     const isUserLoggedIn = await checkAuthStatus();
-    const token = $page.url.searchParams.get('token');
 
     if (isUserLoggedIn) {
       email = getCookie("email");
@@ -191,34 +188,11 @@
       warningToast("กรุณาเข้าสู่ระบบเพื่อกรอกข้อมูล");
       goto("/login"); // Redirect back after login
     }
-
-	if (!token) {
-		console.error('No token found in URL');
-        goto("/cpe02"); // Redirect to login if token is missing
-		dangerToast('ไม่พบข้อมูลภาคการศึกษา');
-		return; // Stop further execution
-	}
-	try {
-		const payload = await verifyJWT(token);
-		term = payload.term; // Extract term from payload
-		//console.log('Decoded payload:', payload);
-	} catch (err) {
-		console.error('Invalid or expired token:', err);
-        goto("/cpe02"); // Redirect to login if token is invalid
-        dangerToast('ข้อมูลภาคการศึกษาไม่ถูกต้อง');
-		return; // Stop further execution
-	}
   });
 
   async function navigateProject(projectId) {
-		try {
-			//console.log('Token:', token);
       goto(`/cpe02/data/term/${term}/project-detail/${projectId}`); // Redirect to the project detail page
 			//goto(`/cpe02/data/term/project-detail?token=${token}`);
-		} catch (err) {
-			console.error('Error creating JWT:', err);
-			// Handle error appropriately, e.g., display an error message to the user
-		}
 	}
 
   function handleTab(event, bindVariableSetter) {

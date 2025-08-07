@@ -2,28 +2,20 @@
   export let data;
 
   import { goto } from "$app/navigation";
-  import { createJWT } from "$lib/jwt.ts";
   import { getAuth } from "firebase/auth";
   import { warningToast } from "$lib/customtoast.js";
 
 
   $: latestTerm = data.lastestTerm;
-  async function navigateWithToken(term) {
+  async function navigatetoForm() {
     const auth = getAuth();
     if (!auth.currentUser) {
       warningToast('กรุณาเข้าสู่ระบบเพื่อดำเนินการ');
       return;
     }
 
-    try {
-      const payload = { term };
-      const token = await createJWT(payload);
-      //console.log('Token:', token);
-      goto(`/cpe02/form?token=${token}`);
-    } catch (err) {
-        console.error('Error creating JWT:', err);
-        // Handle error appropriately, e.g., display an error message to the user
-      }
+      goto(`/cpe02/form`);
+   
     }
 </script>
 
@@ -64,7 +56,7 @@
 
         {#if latestTerm}
           <button
-            on:click={() => navigateWithToken(latestTerm.term)}
+            on:click={() => navigatetoForm()}
             class="w-full mt-auto bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             กรอกฟอร์ม เทอม: {latestTerm.term}
