@@ -56,7 +56,7 @@
 		} else {
 			return [
 				{ id: '/cpe02', label: 'หน้าแรก', icon: 'home' },
-				{ id: '/cpe02#form-title', label: 'กรอกแบบฟอร์ม', icon: 'pencil-alt' }, // Changed order, more logical flow
+				{ id: '/cpe02/form', label: 'กรอกแบบฟอร์ม', icon: 'pencil-alt' }, // Changed order, more logical flow
 				{ id: '/cpe02/data', label: 'ดูข้อมูลโครงงาน', icon: 'database' }
 			];
 		}
