@@ -14,15 +14,13 @@
   } from "firebase/storage";
   import Loading from "$lib/components/loading.svelte";
   import { warningToast, successToast, dangerToast } from "$lib/customtoast";
-  import { page } from "$app/stores";
-  import { verifyJWT, createJWT } from "$lib/jwt.ts";
   import { handleTab } from "./controller";
   import AdviserSelection from "./AdviserSelection.svelte";
-  import Topic9 from "../../../../form/component/topic9.svelte";
-  import Topic11 from "../../../../form/component/topic11.svelte";
+  import Topic9 from "../../../../../../form/component/topic9.svelte";
+  import Topic11 from "../../../../../../form/component/topic11.svelte";
+  //import Topic9 from "../../../../../form/component/topic9.svelte";
+  //import Topic11 from "../../../../../form/component/topic11.svelte";
   // --------- State Variables ---------
-  let projectId = null;
-  let project = null;
   let isNotFound = false;
   let isLoading = false;
   let email = "";
@@ -37,47 +35,24 @@
   let adviserList = []; // { id, value (email), label (name), email, Approval }
   let noAdviserYet = false; // State for "No adviser selected yet"
 
+  export let data;
 
+  let { projectId, project } = data;
   // --------- Lifecycle Methods ---------
   onMount(async () => {
-    // Verify JWT token and extract projectId
-    const token = $page.url.searchParams.get('token');
-    if (!token) {
-      dangerToast('ไม่พบข้อมูล');
-      goto('/cpe02/data');
-      return;
-    }
-
-    try {
-      const payload = await verifyJWT(token);
-      projectId = payload.projectId;
-    } catch (err) {
-      dangerToast('ข้อมูลไม่ถูกต้อง หรือหมดอายุ');
-      goto('/cpe02/data');
-      return;
-    }
-
-    // Check authentication status
-    const isUserLoggedIn = await checkAuthStatus();
-    if (!isUserLoggedIn) {
-      warningToast("ผู้ใช้ไม่ได้เข้าสู่ระบบ กำลังเปลี่ยนเส้นทางไปเข้าสู่ระบบ...");
-      goto("/login");
-      return;
-    }
-
     // Get user info from cookies
     email = getCookie("email");
     role = getCookie("role");
 
     // Load project data
     await loadProjectData();
-    
+
     // Load adviser list
     await loadAdviserList();
   });
 
   // --------- Data Loading Functions ---------
-  
+
   /**
    * โหลดข้อมูลโปรเจกต์จาก API
    */
@@ -87,7 +62,7 @@
 
       if (res.ok) {
         const responseData = await res.json();
-        
+
         if (responseData.data) {
           project = responseData.data;
 
@@ -95,17 +70,26 @@
           if (!project.Operation_Schedule) {
             project.Operation_Schedule = {
               tableTitle: "แผนและระยะเวลาดำเนินงาน (เดือน / พ.ศ.)",
-              monthLabels: ["ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.", "ม.ค.", "ก.พ."],
+              monthLabels: [
+                "ก.ค.",
+                "ส.ค.",
+                "ก.ย.",
+                "ต.ค.",
+                "พ.ย.",
+                "ธ.ค.",
+                "ม.ค.",
+                "ก.พ.",
+              ],
               activities: [], // or some default activities if needed
             };
           }
           if (!project.adviser || !Array.isArray(project.adviser)) {
             project.adviser = [];
           }
-          
+
           // Check if no advisers are selected
           noAdviserYet = project.adviser.length === 0;
-          
+
           // Verify access permissions
           checkAccessPermissions();
         } else {
@@ -117,8 +101,12 @@
           console.error("Project not found via API.");
           isNotFound = true;
         } else {
-          const errorData = await res.json().catch(() => ({ message: res.statusText }));
-          throw new Error(`Failed to fetch project data: ${errorData.message || res.statusText}`);
+          const errorData = await res
+            .json()
+            .catch(() => ({ message: res.statusText }));
+          throw new Error(
+            `Failed to fetch project data: ${errorData.message || res.statusText}`
+          );
         }
       }
     } catch (error) {
@@ -149,10 +137,10 @@
           "Cache-Control": "max-age=60",
         },
       });
-      
+
       if (res.ok) {
         const responseData = await res.json();
-        
+
         if (responseData.data && Array.isArray(responseData.data)) {
           adviserList = responseData.data.map((teacher, index) => ({
             id: `adviser${index + 1}`,
@@ -161,7 +149,6 @@
             email: teacher.email,
           }));
         }
-
       } else {
         throw new Error(`Failed to fetch teacher data: ${res.statusText}`);
       }
@@ -172,7 +159,7 @@
   }
 
   // --------- Member Management Functions ---------
-  
+
   /**
    * เพิ่มช่องกรอกสมาชิกใหม่
    */
@@ -190,7 +177,7 @@
   }
 
   // --------- Image Handling Functions ---------
-  
+
   /**
    * จัดการการเลือกไฟล์รูปภาพ
    */
@@ -219,7 +206,7 @@
     imageDescriptions = imageDescriptions.filter((_, i) => i !== index);
 
     if (previewUrls.length === 0 && fileInput) {
-      fileInput.value = '';
+      fileInput.value = "";
     }
   }
 
@@ -263,7 +250,7 @@
       return true;
     } catch (error) {
       console.error("Error uploading images:", error);
-      dangerToast('เกิดข้อผิดพลาดในการอัพโหลดรูปภาพ: ' + error);
+      dangerToast("เกิดข้อผิดพลาดในการอัพโหลดรูปภาพ: " + error);
       return false;
     } finally {
       isUploading = false;
@@ -276,18 +263,25 @@
    * Actual deletion from Firebase Storage is handled during form submission (`handleSubmit`).
    */
   function markExistingImageForRemoval(index) {
-    if (!project || !project.images || index < 0 || index >= project.images.length) {
-      console.error("Invalid call to markExistingImageForRemoval: project or images array is not properly initialized or index is out of bounds.");
+    if (
+      !project ||
+      !project.images ||
+      index < 0 ||
+      index >= project.images.length
+    ) {
+      console.error(
+        "Invalid call to markExistingImageForRemoval: project or images array is not properly initialized or index is out of bounds."
+      );
       return;
     }
     const imageToRemove = project.images[index];
     const imageName = imageToRemove.title || `รูปภาพ (ลำดับที่ ${index + 1})`; // Fallback name
-    
-      project.images = project.images.filter((_, i) => i !== index);
+
+    project.images = project.images.filter((_, i) => i !== index);
   }
 
   // --------- Form Submission Functions ---------
-  
+
   /**
    * จัดการการส่งฟอร์มอัปเดตโปรเจกต์
    */
@@ -295,7 +289,13 @@
     event.preventDefault();
     isLoading = true;
     const projectDocRef = doc(db, "project-approve", projectId); // Define project document reference once
-    const previousVersionDocRef = doc(db, "project-approve", projectId, "project_versions", "previous_version");
+    const previousVersionDocRef = doc(
+      db,
+      "project-approve",
+      projectId,
+      "project_versions",
+      "previous_version"
+    );
 
     try {
       const projectStateBeforeThisSaveSnap = await getDoc(projectDocRef);
@@ -304,13 +304,20 @@
       let imagesFromOverwrittenPreviousVersion = []; // Images from V(n-2)
 
       if (projectStateBeforeThisSaveSnap.exists()) {
-        const projectStateBeforeThisSaveData = projectStateBeforeThisSaveSnap.data(); // This is V(n-1) data
+        const projectStateBeforeThisSaveData =
+          projectStateBeforeThisSaveSnap.data(); // This is V(n-1) data
 
         // Store images from V(n-2) if it exists
         if (currentOldPreviousVersionSnap.exists()) {
-          const currentOldPreviousVersionData = currentOldPreviousVersionSnap.data();
-          if (currentOldPreviousVersionData.images && Array.isArray(currentOldPreviousVersionData.images)) {
-            imagesFromOverwrittenPreviousVersion = [...currentOldPreviousVersionData.images];
+          const currentOldPreviousVersionData =
+            currentOldPreviousVersionSnap.data();
+          if (
+            currentOldPreviousVersionData.images &&
+            Array.isArray(currentOldPreviousVersionData.images)
+          ) {
+            imagesFromOverwrittenPreviousVersion = [
+              ...currentOldPreviousVersionData.images,
+            ];
           }
         }
 
@@ -319,7 +326,6 @@
           ...projectStateBeforeThisSaveData,
           archivedAt: new Date(),
         });
-
       } else {
         console.warn(
           "Original project document (that would become the new previous_version) not found. Skipping previous version save and smart deletion of old images based on it."
@@ -327,8 +333,13 @@
         // If the main project doc doesn't exist, it's like creating a new one.
         // No V(n-1) to save as previous.
         // However, if currentOldPreviousVersionSnap (V(n-2)) exists, its images are candidates for deletion if not in the new project.
-        if (currentOldPreviousVersionSnap.exists() && currentOldPreviousVersionSnap.data().images) {
-            imagesFromOverwrittenPreviousVersion = [...currentOldPreviousVersionSnap.data().images];
+        if (
+          currentOldPreviousVersionSnap.exists() &&
+          currentOldPreviousVersionSnap.data().images
+        ) {
+          imagesFromOverwrittenPreviousVersion = [
+            ...currentOldPreviousVersionSnap.data().images,
+          ];
         }
       }
 
@@ -340,13 +351,23 @@
         }
       }
       // `project.images` (Svelte state) is now fully updated for V(n) (includes newly uploaded images and excludes UI-removed ones)
-      const finalImageUrlsInNewCurrentVersion_Vn = (project.images || []).map(img => img.url);
-      const finalImageUrlsInNewPreviousVersion_Vn_minus_1 = (projectStateBeforeThisSaveSnap.exists() ? (projectStateBeforeThisSaveSnap.data().images || []) : []).map(img => img.url);
-      
+      const finalImageUrlsInNewCurrentVersion_Vn = (project.images || []).map(
+        (img) => img.url
+      );
+      const finalImageUrlsInNewPreviousVersion_Vn_minus_1 = (
+        projectStateBeforeThisSaveSnap.exists()
+          ? projectStateBeforeThisSaveSnap.data().images || []
+          : []
+      ).map((img) => img.url);
+
       const updatedTasks = { ...project.Tasks };
       Object.keys(updatedTasks).forEach((key) => {
         // Ensure Tasks and its entries are defined and are objects
-        if (updatedTasks[key] && typeof updatedTasks[key] === 'object' && updatedTasks[key].status !== "approve") {
+        if (
+          updatedTasks[key] &&
+          typeof updatedTasks[key] === "object" &&
+          updatedTasks[key].status !== "approve"
+        ) {
           updatedTasks[key].status = "wait";
         }
       });
@@ -363,34 +384,48 @@
       // Perform actual deletion from Storage for images from V(n-2)
       // that are not in V(n-1) (new previous) AND not in V(n) (new current)
       if (imagesFromOverwrittenPreviousVersion.length > 0) {
-        const imagesActuallyToDelete = imagesFromOverwrittenPreviousVersion.filter(oldImage => {
-          return oldImage.url && 
-                 !finalImageUrlsInNewPreviousVersion_Vn_minus_1.includes(oldImage.url) &&
-                 !finalImageUrlsInNewCurrentVersion_Vn.includes(oldImage.url);
-        });
+        const imagesActuallyToDelete =
+          imagesFromOverwrittenPreviousVersion.filter((oldImage) => {
+            return (
+              oldImage.url &&
+              !finalImageUrlsInNewPreviousVersion_Vn_minus_1.includes(
+                oldImage.url
+              ) &&
+              !finalImageUrlsInNewCurrentVersion_Vn.includes(oldImage.url)
+            );
+          });
 
         if (imagesActuallyToDelete.length > 0) {
           //console.log("Attempting to delete images from storage:", imagesActuallyToDelete.map(img => img.url));
           const deletePromises = imagesActuallyToDelete.map(async (image) => {
             let storagePathAttempted;
             try {
-              if (image.url.startsWith('gs://')) {
+              if (image.url.startsWith("gs://")) {
                 storagePathAttempted = image.url;
               } else {
                 const url = new URL(image.url);
-                const pathSegments = url.pathname.split('/o/');
+                const pathSegments = url.pathname.split("/o/");
                 if (pathSegments.length > 1) {
-                  storagePathAttempted = decodeURIComponent(pathSegments[1].split('?')[0]);
+                  storagePathAttempted = decodeURIComponent(
+                    pathSegments[1].split("?")[0]
+                  );
                 } else {
-                  throw new Error(`Could not parse storage path from HTTPS URL.`);
+                  throw new Error(
+                    `Could not parse storage path from HTTPS URL.`
+                  );
                 }
               }
               const imageRef = ref(storage, storagePathAttempted);
               await deleteObject(imageRef);
               //console.log(`Successfully deleted from storage: ${storagePathAttempted}`);
             } catch (error) {
-              console.error(`Failed to delete image ${image.url} (path: ${storagePathAttempted || 'unknown'}) from storage:`, error);
-              warningToast(`ไม่สามารถลบรูปภาพเก่า (${image.title || image.url.substring(image.url.lastIndexOf('/') + 1)}) ออกจากระบบจัดเก็บได้`);
+              console.error(
+                `Failed to delete image ${image.url} (path: ${storagePathAttempted || "unknown"}) from storage:`,
+                error
+              );
+              warningToast(
+                `ไม่สามารถลบรูปภาพเก่า (${image.title || image.url.substring(image.url.lastIndexOf("/") + 1)}) ออกจากระบบจัดเก็บได้`
+              );
             }
           });
           await Promise.all(deletePromises);
@@ -412,12 +447,11 @@
    */
   async function goToProjectDetailPage(projectId) {
     if (checkAuthStatus()) {
-      const payload = { projectId };
-      const token = await createJWT(payload);
-      goto(`./?token=${token}`); // Navigate to parent (detail page)
+      goto(`/cpe02/data/term/${project.term}/project-detail/${projectId}`);
+      //goto(`./?token=${token}`); // Navigate to parent (detail page)
     } else {
-      console.log('User is not authenticated, redirecting to login.');
-      warningToast('กรุณาเข้าสู่ระบบก่อนดูรายละเอียดโครงงาน');
+      console.log("User is not authenticated, redirecting to login.");
+      warningToast("กรุณาเข้าสู่ระบบก่อนดูรายละเอียดโครงงาน");
       goto("/login");
     }
   }
@@ -440,9 +474,11 @@
     {:else if isNotFound}
       <div class="bg-white shadow-xl rounded-lg p-8 text-center">
         <h1 class="text-3xl font-bold text-red-600 mb-4">404 - ไม่พบโครงงาน</h1>
-        <p class="text-lg text-gray-700 mb-6">ขออภัย ไม่พบข้อมูลโครงงานที่คุณกำลังค้นหา</p>
+        <p class="text-lg text-gray-700 mb-6">
+          ขออภัย ไม่พบข้อมูลโครงงานที่คุณกำลังค้นหา
+        </p>
         <button
-          on:click={() => goto('/cpe02/data')}
+          on:click={() => goto("/cpe02/data")}
           class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
         >
           กลับไปหน้ารายการ
@@ -454,19 +490,26 @@
         on:submit={handleSubmit}
       >
         <!-- Form Header -->
-        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+        <div
+          class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white"
+        >
           <h1 class="text-2xl font-bold">แก้ไขข้อมูลโครงงาน</h1>
         </div>
 
         <!-- Form Body -->
         <div class="p-6 md:p-8 space-y-6">
-
           <!-- Section 1: General Information -->
           <fieldset class="space-y-4 border border-gray-300 p-4 rounded-md">
-            <legend class="text-lg font-semibold text-gray-700 px-2">ข้อมูลทั่วไป</legend>
+            <legend class="text-lg font-semibold text-gray-700 px-2"
+              >ข้อมูลทั่วไป</legend
+            >
 
             <div>
-              <label for="term" class="block text-sm font-medium text-gray-700 mb-1">ภาคเรียน <span class="text-red-500">*</span></label>
+              <label
+                for="term"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >ภาคเรียน <span class="text-red-500">*</span></label
+              >
               <input
                 id="term"
                 name="term"
@@ -478,7 +521,12 @@
             </div>
 
             <div>
-              <label for="project_name_th" class="block text-sm font-medium text-gray-700 mb-1">ชื่อโครงงาน (ภาษาไทย) <span class="text-red-500">*</span></label>
+              <label
+                for="project_name_th"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >ชื่อโครงงาน (ภาษาไทย) <span class="text-red-500">*</span
+                ></label
+              >
               <input
                 type="text"
                 id="project_name_th"
@@ -490,7 +538,12 @@
             </div>
 
             <div>
-              <label for="project_name_en" class="block text-sm font-medium text-gray-700 mb-1">ชื่อโครงงาน (ภาษาอังกฤษ) <span class="text-red-500">*</span></label>
+              <label
+                for="project_name_en"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >ชื่อโครงงาน (ภาษาอังกฤษ) <span class="text-red-500">*</span
+                ></label
+              >
               <input
                 type="text"
                 id="project_name_en"
@@ -504,26 +557,48 @@
             <!-- Member Management -->
             <div>
               <div class="flex justify-between items-center mb-2">
-                <label class="block text-sm font-medium text-gray-700">ชื่อผู้เสนอโครงงาน <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-gray-700"
+                  >ชื่อผู้เสนอโครงงาน <span class="text-red-500">*</span></label
+                >
                 <div class="flex space-x-2">
                   <button
                     type="button"
                     class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
                     on:click={addMemberRow}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 mr-1.5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      ><path
+                        fill-rule="evenodd"
+                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                        clip-rule="evenodd"
+                      /></svg
+                    >
                     เพิ่ม
                   </button>
                   {#if project.members.length > 1}
-                  <button
-                    type="button"
-                    on:click={deleteLastMember}
-                    class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition disabled:opacity-50"
-                    disabled={project.members.length <= 1}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
-                    ลบ
-                  </button>
+                    <button
+                      type="button"
+                      on:click={deleteLastMember}
+                      class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition disabled:opacity-50"
+                      disabled={project.members.length <= 1}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4 mr-1.5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        ><path
+                          fill-rule="evenodd"
+                          d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"
+                          clip-rule="evenodd"
+                        /></svg
+                      >
+                      ลบ
+                    </button>
                   {/if}
                 </div>
               </div>
@@ -541,14 +616,16 @@
             </div>
 
             <!-- Adviser Selection -->
-            <AdviserSelection
-              {adviserList}
-              bind:project={project} 
-              bind:noAdviserYet={noAdviserYet}
-            />
+            <AdviserSelection {adviserList} bind:project bind:noAdviserYet />
 
             <div>
-              <label for="external_consultant" class="block text-sm font-medium text-gray-700 mb-1">ที่ปรึกษาภายนอก <span class="text-xs text-gray-500">(ถ้ามี)</span></label>
+              <label
+                for="external_consultant"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >ที่ปรึกษาภายนอก <span class="text-xs text-gray-500"
+                  >(ถ้ามี)</span
+                ></label
+              >
               <input
                 type="text"
                 id="external_consultant"
@@ -561,68 +638,108 @@
 
           <!-- Section 2: Project Details -->
           <fieldset class="space-y-4 border border-gray-300 p-4 rounded-md">
-            <legend class="text-lg font-semibold text-gray-700 px-2">รายละเอียดโครงงาน</legend>
-            
+            <legend class="text-lg font-semibold text-gray-700 px-2"
+              >รายละเอียดโครงงาน</legend
+            >
+
             <div>
-              <label for="project_problem" class="block text-sm font-medium text-gray-700 mb-1">4. ที่มาและความสำคัญของปัญหา <span class="text-red-500">*</span></label>
+              <label
+                for="project_problem"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >4. ที่มาและความสำคัญของปัญหา <span class="text-red-500">*</span
+                ></label
+              >
               <textarea
                 id="project_problem"
                 rows="8"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
                 bind:value={project.project_problem}
-                on:keydown={(event) => handleTab(event, (value) => (project.project_problem = value))}
+                on:keydown={(event) =>
+                  handleTab(
+                    event,
+                    (value) => (project.project_problem = value)
+                  )}
                 placeholder="อธิบายที่มาและความสำคัญของปัญหา..."
               ></textarea>
             </div>
 
             <div>
-              <label for="project_Objective" class="block text-sm font-medium text-gray-700 mb-1">5. วัตถุประสงค์ของโครงงาน <span class="text-red-500">*</span></label>
+              <label
+                for="project_Objective"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >5. วัตถุประสงค์ของโครงงาน <span class="text-red-500">*</span
+                ></label
+              >
               <textarea
                 id="project_Objective"
                 rows="5"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
                 bind:value={project.project_Objective}
-                on:keydown={(event) => handleTab(event, (value) => (project.project_Objective = value))}
+                on:keydown={(event) =>
+                  handleTab(
+                    event,
+                    (value) => (project.project_Objective = value)
+                  )}
                 placeholder="ระบุวัตถุประสงค์ของโครงงาน..."
               ></textarea>
             </div>
 
             <div>
-              <label for="research_data" class="block text-sm font-medium text-gray-700 mb-1">6. เอกสาร/งานวิจัยที่เกี่ยวข้อง <span class="text-red-500">*</span></label>
+              <label
+                for="research_data"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >6. เอกสาร/งานวิจัยที่เกี่ยวข้อง <span class="text-red-500"
+                  >*</span
+                ></label
+              >
               <textarea
                 id="research_data"
                 rows="8"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
                 bind:value={project.research_data}
-                on:keydown={(event) => handleTab(event, (value) => (project.research_data = value))}
+                on:keydown={(event) =>
+                  handleTab(event, (value) => (project.research_data = value))}
                 placeholder="ระบุเอกสารและงานวิจัยที่เกี่ยวข้อง..."
               ></textarea>
             </div>
 
             <div>
-              <label for="Theory_principles" class="block text-sm font-medium text-gray-700 mb-1">7. ทฤษฎีและหลักการ <span class="text-red-500">*</span></label>
+              <label
+                for="Theory_principles"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >7. ทฤษฎีและหลักการ <span class="text-red-500">*</span></label
+              >
               <textarea
                 id="Theory_principles"
                 rows="8"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
                 bind:value={project.Theory_principles}
-                on:keydown={(event) => handleTab(event, (value) => (project.Theory_principles = value))}
+                on:keydown={(event) =>
+                  handleTab(
+                    event,
+                    (value) => (project.Theory_principles = value)
+                  )}
                 placeholder="อธิบายทฤษฎีและหลักการที่ใช้..."
               ></textarea>
             </div>
-             <div>
-              <label for="scope" class="block text-sm font-medium text-gray-700 mb-1">8. ขอบเขตโครงงาน <span class="text-red-500">*</span></label>
+            <div>
+              <label
+                for="scope"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >8. ขอบเขตโครงงาน <span class="text-red-500">*</span></label
+              >
               <textarea
                 id="scope"
                 rows="8"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
                 bind:value={project.scope}
-                on:keydown={(event) => handleTab(event, (value) => (project.scope = value))}
+                on:keydown={(event) =>
+                  handleTab(event, (value) => (project.scope = value))}
                 placeholder="ระบุขอบเขตของโครงงาน..."
               ></textarea>
             </div>
@@ -631,57 +748,76 @@
                 bind:tableTitle={project.Operation_Schedule.tableTitle}
                 bind:monthLabels={project.Operation_Schedule.monthLabels}
                 bind:activities={project.Operation_Schedule.activities}
-                />
+              />
             </div>
             <div>
-              <label for="benefit" class="block text-sm font-medium text-gray-700 mb-1">10. ประโยชน์ที่คาดว่าจะได้รับ<span class="text-red-500">*</span></label>
+              <label
+                for="benefit"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >10. ประโยชน์ที่คาดว่าจะได้รับ<span class="text-red-500">*</span
+                ></label
+              >
               <textarea
                 id="benefit"
                 rows="8"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
                 bind:value={project.benefits}
-                on:keydown={(event) => handleTab(event, (value) => (project.benefits = value))}
+                on:keydown={(event) =>
+                  handleTab(event, (value) => (project.benefits = value))}
                 placeholder="ระบุประโยชน์ที่คาดว่าจะได้รับของโครงงาน..."
               ></textarea>
             </div>
 
             <div>
-              <Topic11
-                bind:budgetItems={project.budgetItems}
-                />
+              <Topic11 bind:budgetItems={project.budgetItems} />
             </div>
-            
+
             <div>
-              <label for="refer" class="block text-sm font-medium text-gray-700 mb-1">12. เอกสารอ้างอิง<span class="text-red-500">*</span></label>
+              <label
+                for="refer"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >12. เอกสารอ้างอิง<span class="text-red-500">*</span></label
+              >
               <textarea
                 id="refer"
                 rows="8"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 required
                 bind:value={project.refer}
-                on:keydown={(event) => handleTab(event, (value) => (project.refer = value))}
+                on:keydown={(event) =>
+                  handleTab(event, (value) => (project.refer = value))}
                 placeholder="ระบุเอกสารอ้างอิงของโครงงาน..."
               ></textarea>
             </div>
 
             <div>
-              <label for="other" class="block text-sm font-medium text-gray-700 mb-1">ไฟล์ PDF (Google drive)</label>
+              <label
+                for="other"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >ไฟล์ PDF (Google drive)</label
+              >
               <input
                 id="pdfdriveLink"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 bind:value={project.pdfdriveLink}
-              >
+              />
             </div>
           </fieldset>
 
           <!-- Section 3: Images -->
           <fieldset class="space-y-4 border border-gray-300 p-4 rounded-md">
-            <legend class="text-lg font-semibold text-gray-700 px-2">รูปภาพประกอบ</legend>
+            <legend class="text-lg font-semibold text-gray-700 px-2"
+              >รูปภาพประกอบ</legend
+            >
 
             <!-- Upload New Images -->
             <div>
-              <label for="images_upload" class="block text-sm font-medium text-gray-700 mb-1">เพิ่มรูปภาพใหม่ (ขนาดไม่เกิน 2MB ต่อไฟล์)</label>
+              <label
+                for="images_upload"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >เพิ่มรูปภาพใหม่ (ขนาดไม่เกิน 2MB ต่อไฟล์)</label
+              >
               <input
                 type="file"
                 id="images_upload"
@@ -701,10 +837,16 @@
             <!-- Preview New Images -->
             {#if previewUrls.length > 0}
               <div class="mt-4 space-y-4">
-                <h3 class="text-sm font-medium text-gray-700">รูปภาพที่เลือกใหม่:</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <h3 class="text-sm font-medium text-gray-700">
+                  รูปภาพที่เลือกใหม่:
+                </h3>
+                <div
+                  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+                >
                   {#each previewUrls as preview, index}
-                    <div class="border border-gray-200 rounded-md p-3 shadow-sm">
+                    <div
+                      class="border border-gray-200 rounded-md p-3 shadow-sm"
+                    >
                       <img
                         src={preview}
                         alt={`Preview ${index + 1}`}
@@ -720,8 +862,19 @@
                         type="button"
                         class="w-full inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                         on:click={() => removePreview(index)}
-                      > <!-- svelte-ignore a11y_no_redundant_roles -->
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                      >
+                        <!-- svelte-ignore a11y_no_redundant_roles -->
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 mr-1.5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          ><path
+                            fill-rule="evenodd"
+                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                            clip-rule="evenodd"
+                          /></svg
+                        >
                         ลบรูปนี้
                       </button>
                     </div>
@@ -733,16 +886,26 @@
             <!-- Existing Images -->
             {#if project.images && project.images.length > 0}
               <div class="mt-6 pt-4 border-t border-gray-200">
-                <h3 class="text-sm font-medium text-gray-700 mb-3">รูปภาพเดิมในโครงงาน:</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">
+                  รูปภาพเดิมในโครงงาน:
+                </h3>
+                <div
+                  class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+                >
                   {#each project.images as imageUrl, index}
-                    <div class="border border-gray-200 rounded-md p-3 shadow-sm">
+                    <div
+                      class="border border-gray-200 rounded-md p-3 shadow-sm"
+                    >
                       <img
                         src={imageUrl.url}
                         alt={imageUrl.title || `Existing Image ${index + 1}`}
                         class="w-full h-32 object-cover rounded-md mb-2"
                       />
-                       <label for={`existing_image_title_${index}`} class="block text-xs font-medium text-gray-600 mb-0.5">รายละเอียด:</label>
+                      <label
+                        for={`existing_image_title_${index}`}
+                        class="block text-xs font-medium text-gray-600 mb-0.5"
+                        >รายละเอียด:</label
+                      >
                       <input
                         type="text"
                         id={`existing_image_title_${index}`}
@@ -755,8 +918,19 @@
                         class="w-full inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                         on:click={() => markExistingImageForRemoval(index)}
                         disabled={isLoading || isUploading}
-                      > <!-- svelte-ignore a11y_no_redundant_roles -->
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                      >
+                        <!-- svelte-ignore a11y_no_redundant_roles -->
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 mr-1.5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          ><path
+                            fill-rule="evenodd"
+                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                            clip-rule="evenodd"
+                          /></svg
+                        >
                         ลบรูปนี้
                       </button>
                     </div>
@@ -766,33 +940,63 @@
             {/if}
           </fieldset>
 
-          
-        <!-- Form Footer / Actions -->
-        <div class="px-6 md:px-8 py-4 bg-gray-50 border-t border-gray-200 flex justify-end items-center space-x-3">
-           <button
-            type="button"
-            on:click={() => goToProjectDetailPage(projectId)}
-            class="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            disabled={isLoading || isUploading}
+          <!-- Form Footer / Actions -->
+          <div
+            class="px-6 md:px-8 py-4 bg-gray-50 border-t border-gray-200 flex justify-end items-center space-x-3"
           >
-            ยกเลิก
-          </button>
-          <button
-            type="submit"
-            class="inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            disabled={isLoading || isUploading}
-          >
-            {#if isLoading || isUploading}
-              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              กำลังบันทึก...
-            {:else}
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-              บันทึกการแก้ไข
-            {/if}
-          </button>
+            <button
+              type="button"
+              on:click={() => goToProjectDetailPage(projectId)}
+              class="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={isLoading || isUploading}
+            >
+              ยกเลิก
+            </button>
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              disabled={isLoading || isUploading}
+            >
+              {#if isLoading || isUploading}
+                <svg
+                  class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                กำลังบันทึก...
+              {:else}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 mr-2"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  ><path
+                    d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"
+                  /><path
+                    fill-rule="evenodd"
+                    d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
+                    clip-rule="evenodd"
+                  /></svg
+                >
+                บันทึกการแก้ไข
+              {/if}
+            </button>
+          </div>
         </div>
       </form>
     {:else}

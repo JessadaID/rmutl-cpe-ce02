@@ -85,16 +85,8 @@
     return 'N/A';
   }
 
-  async function navigateToProjectDetail(projectId) {
-    try {
-        const { createJWT } = await import('$lib/jwt'); // Dynamic import
-        const payload = { projectId };
-        const token = await createJWT(payload);
-        goto(`/cpe02/data/term/project-detail?token=${token}`);
-    } catch (error) {
-        console.error("Error creating JWT or navigating:", error);
-        goto('/cpe02/data'); // Fallback
-    }
+  async function navigateToProjectDetail(project) {
+        goto(`/cpe02/data/term/${project.term}/project-detail/${project.id}`); // Navigate to the project detail page
   }
 </script>
 
@@ -154,8 +146,8 @@
         {#each recentProjects as project (project.id)}
           <li
             class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors cursor-pointer"
-            on:click={() => navigateToProjectDetail(project.id)}
-            on:keydown={(e) => e.key === 'Enter' && navigateToProjectDetail(project.id)}
+            on:click={() => navigateToProjectDetail(project)}
+            on:keydown={(e) => e.key === 'Enter' && navigateToProjectDetail(project)}
             role="link"
             tabindex="0"
           >

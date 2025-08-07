@@ -1,7 +1,6 @@
 <script>
     import { onMount } from "svelte";
     import { goto } from '$app/navigation';
-    import { createJWT } from '$lib/jwt';
     import Loading from "$lib/components/loading.svelte";
     import { auth } from '$lib/firebase'; // Assuming this is your CLIENT-SIDE Firebase auth instance
     import { onAuthStateChanged } from 'firebase/auth';
@@ -97,19 +96,12 @@
         return () => unsubscribe();
     });
 
-    async function viewProjectDetails(projectId) {
-        if (!projectId) {
-            dangerToast("Project ID is missing.");
+    async function viewProjectDetails(project) {
+        if (!project) {
+            dangerToast("Project is missing.");
             return;
         }
-        try {
-            const payload = { projectId };
-            const token = await createJWT(payload);
-            goto(`/cpe02/data/term/project-detail?token=${token}`);
-        } catch (err) {
-            console.error('Error creating JWT or navigating:', err);
-            dangerToast("Could not navigate to project details.");
-        }
+        goto(`/cpe02/data/term/${project.term}/project-detail/${project.id}`); // Navigate to the project detail page
     }
 
      /**
@@ -275,7 +267,7 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <button
-                                                on:click={() => viewProjectDetails(project.id)}
+                                                on:click={() => viewProjectDetails(project)}
                                                 class="text-indigo-600 hover:text-indigo-900 hover:underline focus:outline-none"
                                             >
                                                 ดูรายละเอียด

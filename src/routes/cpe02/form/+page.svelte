@@ -210,12 +210,11 @@
 	}
   });
 
-  async function navigateWithToken(projectId) {
+  async function navigateProject(projectId) {
 		try {
-			const payload = { projectId };
-			const token = await createJWT(payload);
 			//console.log('Token:', token);
-			goto(`/cpe02/data/term/project-detail?token=${token}`);
+      goto(`/cpe02/data/term/${term}/project-detail/${projectId}`); // Redirect to the project detail page
+			//goto(`/cpe02/data/term/project-detail?token=${token}`);
 		} catch (err) {
 			console.error('Error creating JWT:', err);
 			// Handle error appropriately, e.g., display an error message to the user
@@ -276,7 +275,7 @@
         successToast(`เพิ่มข้อมูลโครงงาน "${project_name_th}" สำเร็จ!`);
         // Consider redirecting to the newly created project page or the list view
         const projectId = docRef.id; // Get the document ID
-        navigateWithToken(projectId); // Redirect to the term page with token
+        navigateProject(projectId); // Redirect to the term page with token
 
       } catch (error) {
         console.error("Error adding document: ", error);

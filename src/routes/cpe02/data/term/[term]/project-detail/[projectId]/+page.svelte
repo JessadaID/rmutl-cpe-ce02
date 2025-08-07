@@ -1,7 +1,6 @@
 <script>
-  import { page } from "$app/stores";
   import { onMount } from "svelte";
-  import { goto } from "$app/navigation"; // Import goto for navigation
+  import { goto } from "$app/navigation";
   import {
     collection,
     query,
@@ -13,43 +12,106 @@
   } from "firebase/firestore";
   import { ref, deleteObject } from "firebase/storage";
   import { db, storage } from "$lib/firebase.js";
-  import { checkAuthStatus } from "$lib/auth"; // Assuming this returns user info or null
+  import { checkAuthStatus } from "$lib/auth";
   import { dangerToast, successToast, warningToast } from "$lib/customtoast";
   import Loading from "$lib/components/loading.svelte";
   import { getCookie } from "cookies-next";
-  import Process from "./Process.svelte"; // Adjust the import path as necessary
-  import { verifyJWT, createJWT } from "$lib/jwt"; // Adjust the import path as necessary
+  import Process from "./Process.svelte";
   import StudentSelect from "./student_select.svelte";
   import ProjectScore from "./Project_score.svelte";
 
-  let userEmail = null; // Store user email from auth check
-  let project = null;
-  let currentProject = null; // Current version of project
-  let projectVersions = []; // Array to store all versions
-  let selectedVersion = "current"; // Track which version is selected
-  let isNotFound = false;
-  let role = ""; // Assuming role comes from auth check or another source
-  let isLoading = true; // Start loading initially
-  let isLoadingVersions = false; // Loading state for versions
-  let isDeleting = false; // Specific loading state for delete action
-  let can_edit = false; // This should likely be determined based on role/email
-  let can_edit_tasks = false; // Renamed for clarity (plural tasks)
-  let status = []; // Initialize as empty array
-  let termTasks = []; // Renamed to avoid conflict with potential 'Task' type/component name
+  // Export data from page.server.js
+  export let data;
+  // Destructure server data (only basic project data)
+  let { project, projectId, isNotFound } = data;
+
+  // Client-side calculated variables
+  let currentProject = project; // Keep reference to original project
+  let projectVersions = []; // Will be loaded client-side
+  let termTasks = []; // Will be loaded client-side
+  let status = []; // Will be calculated client-side
+  let comment = []; // Will be calculated client-side
+  let form_data = null; // Will be loaded client-side
+
+  let userEmail = getCookie("email") || null; // Get user email from cookies
+  let role = getCookie("role") || "user"; // Get user role from cookies, default to 'guest'
+
+  // Permission calculations (client-side)
+  let can_edit = role === "admin" || (userEmail && project.email === userEmail);
+  let isAdvisor = project.adviser && project.adviser.some((adv) => adv.email === userEmail);
+  let can_edit_tasks = role === "admin" || isAdvisor;
+  let shouldShowProcessComponent = can_edit_tasks || project.email === userEmail;
+  let hasDirectorData = project.directors && Array.isArray(project.directors) && project.directors.length > 0;
+  let canViewDirectorScores = hasDirectorData && (role === "admin" || project.email === userEmail || (userEmail && project.directors.some((d) => d.email === userEmail)));
+  let showTask = shouldShowProcessComponent || canViewDirectorScores;
+
+  // Client-side reactive variables
+  let selectedVersion = "current";
+  let isLoading = true;
+  let isLoadingVersions = false;
+  let isDeleting = false;
   let visibleStates = [];
-  let comment = []; // Initialize as empty array
   let showModal = false;
   let selectedImage = null;
-  let projectId = null;
-  let showTask = false; // Control visibility of task section
+  let activeTaskView = shouldShowProcessComponent ? "process" : (canViewDirectorScores ? "scores" : "");
+  let activeMainView = "current";
 
-  // New state variables for clarity within the right panel
-  let shouldShowProcessComponent = false;
-  let canViewDirectorScores = false;
-  let activeTaskView = ""; // 'process' or 'scores', determines which view is active in the right panel
-  let activeMainView = "current"; // 'current' or 'previous_version'
+  onMount(async () => {
+    isLoading = true;
 
-  let form_data;
+    try {
+      // Load term tasks if needed
+      if (shouldShowProcessComponent) {
+        const taskQuery = query(
+          collection(db, "Task"),
+          where("term", "==", project.term)
+        );
+        const querySnapshot = await getDocs(taskQuery);
+        termTasks = querySnapshot.docs
+          .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+          .sort((a, b) => a.index - b.index);
+
+        // Initialize visibility states and task data
+        visibleStates = Array(termTasks.length).fill(false);
+        status = termTasks.map((_, index) => project.Tasks?.[index]?.status || "");
+        comment = termTasks.map((_, index) => project.Tasks?.[index]?.comment || "");
+      }
+
+      // Load project versions and form data
+      await loadProjectVersions();
+
+    } catch (error) {
+      console.error("Error loading client-side data:", error);
+      dangerToast("เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error.message);
+    } finally {
+      isLoading = false;
+    }
+  });
+
+  // Function to load project versions
+  async function loadProjectVersions() {
+    if (!projectId) return;
+
+    isLoadingVersions = true;
+    try {
+      const versionsRef = collection(db, "project-approve", projectId, "project_versions");
+      const form_respond = await fetch(`/api/form-data/${project.term}`);
+
+      form_data = (await form_respond.json()).data;
+
+      const versionsSnapshot = await getDocs(versionsRef);
+      projectVersions = versionsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      console.error("Error loading project versions:", error);
+      warningToast("เกิดข้อผิดพลาดในการโหลดประวัติเวอร์ชัน: " + error.message);
+    } finally {
+      isLoadingVersions = false;
+    }
+  }
+
   // Function to open image modal
   function openImageModal(image) {
     selectedImage = image;
@@ -59,48 +121,11 @@
   // Function to navigate to edit page
   async function goToEditPage(projectId) {
     if (checkAuthStatus()) {
-      const payload = { projectId };
-      const token = await createJWT(payload);
-      goto(`./project-detail/edit?token=${token}`); // Use relative path
+      goto(`/cpe02/data/term/${project.term}/project-detail/${projectId}/edit`);
+      //goto(`./project-detail/edit?projectId=${projectId}`);
     } else {
       console.log("User is not authenticated, redirecting to login.");
       warningToast("กรุณาเข้าสู่ระบบก่อนดูรายละเอียดโครงงาน");
-    }
-  }
-
-  // Function to load project versions
-  async function loadProjectVersions() {
-    if (!projectId) return;
-
-    isLoadingVersions = true;
-    try {
-      const versionsRef = collection(
-        db,
-        "project-approve",
-        projectId,
-        "project_versions"
-      );
-      //const form_respond = await fetch("/api/form-data?term="+project.term);
-      const form_respond = await fetch(`/api/form-data/${project.term}`);
-
-      form_data = (await form_respond.json()).data;
-      //console.log("Form Data:", form_data);
-      //console.log("Form Data:", form_data);
-
-      const versionsSnapshot = await getDocs(versionsRef);
-
-      projectVersions = versionsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      //console.log('Project Versions:', projectVersions);
-
-      //console.log(projectVersions);
-    } catch (error) {
-      //console.error("Error loading project versions:", error);
-      warningToast("เกิดข้อผิดพลาดในการโหลดประวัติเวอร์ชัน: " + error.message);
-    } finally {
-      isLoadingVersions = false;
     }
   }
 
@@ -123,7 +148,6 @@
   // Function to update task-related data when version changes
   function updateTaskData() {
     if (shouldShowProcessComponent && project) {
-      // Initialize status and comment arrays based on selected version
       status = termTasks.map(
         (_, index) => project.Tasks?.[index]?.status || ""
       );
@@ -135,122 +159,6 @@
       comment = [];
     }
   }
-
-  onMount(async () => {
-    isLoading = true;
-    const token = $page.url.searchParams.get("token");
-    if (!token) {
-      console.error("No token found in URL");
-      dangerToast("ไม่พบข้อมูล");
-      goto("/cpe02/data"); // Redirect to login page
-      return; // Stop further execution
-    }
-
-    try {
-      const payload = await verifyJWT(token);
-      projectId = payload.projectId; // Extract term from payload
-      //console.log('Decoded payload:', payload);
-    } catch (err) {
-      console.error("Invalid or expired token:", err);
-      dangerToast("ข้อมูลภาคการศึกษาไม่ถูกต้อง หรือหมดอายุ");
-      goto("/cpe02/data"); // Redirect to login page
-      return; // Stop further execution
-    }
-
-    try {
-      // Check Auth Status and get user info
-      if (checkAuthStatus()) {
-        userEmail = getCookie("email");
-        role = getCookie("role"); // Make sure checkAuthStatus provides role if needed
-        //console.log(userEmail,role)
-      } else {
-        // Handle case where user is not logged in, maybe redirect or show limited view
-        console.warn("User not authenticated.");
-        // Optionally redirect: goto('/login');
-      }
-
-      // Fetch project data
-      const projectRef = doc(db, "project-approve", projectId);
-      const projectSnap = await getDoc(projectRef);
-
-      if (projectSnap.exists()) {
-        project = projectSnap.data();
-        currentProject = projectSnap.data();
-        can_edit =
-          role === "admin" || (userEmail && project.email === userEmail);
-
-        // Determine if the user can edit tasks (admin or advisor for this project)
-        const isAdvisor =
-          project.adviser &&
-          project.adviser.some((adv) => adv.email === userEmail);
-        can_edit_tasks = role === "admin" || isAdvisor;
-
-        // Determine if the Process component (term tasks) should be shown and its data loaded
-        shouldShowProcessComponent =
-          can_edit_tasks || project.email === userEmail;
-
-        // Determine if the Director Scores section should be shown
-        const hasDirectorData =
-          project.directors &&
-          Array.isArray(project.directors) &&
-          project.directors.length > 0;
-        canViewDirectorScores =
-          hasDirectorData &&
-          (role === "admin" ||
-            project.email === userEmail ||
-            (userEmail &&
-              project.directors.some((d) => d.email === userEmail)));
-
-        // Overall visibility of the right-hand column
-        showTask = shouldShowProcessComponent || canViewDirectorScores;
-
-        if (shouldShowProcessComponent) {
-          const taskQuery = query(
-            collection(db, "Task"),
-            where("term", "==", project.term)
-          );
-          const querySnapshot = await getDocs(taskQuery);
-          termTasks = querySnapshot.docs
-            .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-            .sort((a, b) => a.index - b.index);
-
-          // Initialize visibility states for Process component
-          visibleStates = Array(termTasks.length).fill(false);
-
-          // Initialize status and comment arrays based on fetched tasks and project data
-          status = termTasks.map(
-            (_, index) => project.Tasks?.[index]?.status || ""
-          );
-          comment = termTasks.map(
-            (_, index) => project.Tasks?.[index]?.comment || ""
-          );
-        } else {
-          // If not showing tasks, ensure status and comment are empty
-          status = [];
-          comment = [];
-        }
-
-        await loadProjectVersions();
-
-        // Set the default active view for the right panel
-        if (shouldShowProcessComponent) {
-          activeTaskView = "process";
-        } else if (canViewDirectorScores) {
-          activeTaskView = "scores";
-        }
-      } else {
-        console.error("Project not found in project-approve");
-        isNotFound = true;
-        dangerToast("ไม่พบข้อมูลโครงงานที่ระบุ");
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      dangerToast("เกิดข้อผิดพลาดในการดึงข้อมูล: " + error.message);
-      isNotFound = true; // Assume not found on error as well
-    } finally {
-      isLoading = false;
-    }
-  });
 
   async function deleteProject(id) {
     // Re-check auth status just before sensitive action
@@ -264,12 +172,12 @@
         "คุณแน่ใจหรือไม่ว่าต้องการลบโครงงานนี้และข้อมูลที่เกี่ยวข้องทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้"
       )
     ) {
-      isDeleting = true; // Use specific loading state for delete
+      isDeleting = true;
 
       try {
         const docRef = doc(db, "project-approve", id);
         const docRefavailability = doc(db, "project-availability", id);
-        const docSnap = await getDoc(docRef); // Re-fetch just before delete is safer
+        const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
           const projectData = docSnap.data();
@@ -277,14 +185,13 @@
           // Delete associated images from Firebase Storage
           if (projectData.images && Array.isArray(projectData.images)) {
             const deletePromises = projectData.images
-              .filter((image) => image && image.url) // Ensure image and url exist
+              .filter((image) => image && image.url)
               .map(async (image) => {
                 try {
-                  // Extract storage path from URL more robustly
                   const url = new URL(image.url);
                   const storagePath = decodeURIComponent(
                     url.pathname.split("/o/")[1]
-                  ); // Path after /o/
+                  );
 
                   if (storagePath) {
                     const imageRef = ref(storage, storagePath);
@@ -292,7 +199,6 @@
                     console.log(`Deleted image: ${image.name || storagePath}`);
                   }
                 } catch (error) {
-                  // Log specific image deletion error but continue
                   console.error(
                     `Failed to delete image ${image.name || image.url}:`,
                     error
@@ -303,14 +209,13 @@
                 }
               });
 
-            await Promise.all(deletePromises); // Wait for all deletions
+            await Promise.all(deletePromises);
           }
 
-          // Delete the project document from Firestore
           await deleteDoc(docRef);
-          await deleteDoc(docRefavailability); // Delete availability document if it exists
+          await deleteDoc(docRefavailability);
           successToast("ลบข้อมูลโครงงานและรูปภาพเรียบร้อยแล้ว!");
-          goto(`/cpe02/data`); // Navigate back to the list page
+          goto(`/cpe02/data/term/${project.term}`); // Redirect to term page
         } else {
           warningToast("ไม่พบข้อมูลโครงงานที่จะลบ (อาจถูกลบไปแล้ว)");
         }
@@ -331,6 +236,8 @@
     }
   }
 </script>
+
+<!-- Your HTML template goes here -->
 
 <svelte:head>
   <title>รายละเอียดโครงงาน</title>

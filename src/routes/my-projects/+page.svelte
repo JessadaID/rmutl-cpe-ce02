@@ -1,7 +1,6 @@
 <script>
     import { onMount } from "svelte";
     import { goto } from '$app/navigation';
-    import { createJWT } from '$lib/jwt';
     import { auth } from '$lib/firebase'; 
     import { onAuthStateChanged } from 'firebase/auth';
     import Loading from "$lib/components/loading.svelte";
@@ -97,19 +96,12 @@
         return () => unsubscribe();
     });
 
-    async function viewProjectDetails(projectId) {
-        if (!projectId) {
-            dangerToast(`Project ID is missing.`)
+    async function viewProjectDetails(project) {
+        if (!project) {
+            dangerToast(`Project is missing.`)
             return;
         }
-        try {
-            const payload = { projectId };
-            const token = await createJWT(payload);
-            goto(`/cpe02/data/term/project-detail?token=${token}`);
-        } catch (err) {
-            console.error('Error creating JWT or navigating:', err);
-            dangerToast(`Could not navigate to project details.`)
-        }
+        goto(`/cpe02/data/term/${project.term}/project-detail/${project.id}`); // Navigate to the project detail page
     }
 
 
@@ -271,7 +263,7 @@
                                                 {/if}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button on:click={() => viewProjectDetails(project.id)} class="text-indigo-600 hover:text-indigo-900 hover:underline focus:outline-none">
+                                                <button on:click={() => viewProjectDetails(project)} class="text-indigo-600 hover:text-indigo-900 hover:underline focus:outline-none">
                                                     ดูรายละเอียด
                                                 </button>
                                             </td>
@@ -360,7 +352,7 @@
                                         </dl>
                                     </div>
                                     <div class="mt-4 pt-3 border-t border-gray-200 text-right">
-                                        <button on:click={() => viewProjectDetails(project.id)} class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        <button on:click={() => viewProjectDetails(project)} class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                             ดูรายละเอียด
                                         </button>
                                     </div>
