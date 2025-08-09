@@ -127,12 +127,10 @@
   // Function to calculate overall average score with grouped averaging
 function calculateOverallAverage(project) {
   const adviserScores = (project.adviser || [])
-    .map(a => a.score)
-    .filter(score => score !== undefined && score !== null && typeof score === 'number');
+    .map(a => a.score || 0)
 
   const directorScores = (project.directors || [])
-    .map(d => d.score)
-    .filter(score => score !== undefined && score !== null && typeof score === 'number');
+    .map(d => d.score || 0)
 
   const subjectScores = [project.score_from_subject_teacher || 0]
     .filter(score => score !== undefined && score !== null && typeof score === 'number');
@@ -145,7 +143,7 @@ function calculateOverallAverage(project) {
   const directorAverage = directorScores.length > 0 
     ? directorScores.reduce((sum, score) => sum + score, 0) / directorScores.length 
     : 0;
-
+    
   const subjectAverage = subjectScores.length > 0 
     ? subjectScores.reduce((sum, score) => sum + score, 0) / subjectScores.length 
     : 0;
