@@ -1,44 +1,35 @@
 // +page.server.js
-import { error, redirect } from '@sveltejs/kit';
-import { adminDb } from "$lib/server/firebase.js";
+import { error } from '@sveltejs/kit';
+import { adminDb } from '$lib/server/firebase.js';
+
+function toISOIfTimestamp(value) {
+  return value?.toDate ? value.toDate().toISOString() : value;
+}
 
 export async function load({ params }) {
-  // Get projectId from URL parameter or route parameter
-  const projectId = params.projectId ;
+  const { projectId } = params;
 
   try {
-    // Fetch project data using Firebase Admin
-    const projectRef = adminDb.collection("project-approve").doc(projectId);
-    const projectSnap = await projectRef.get();
+    const projectSnap = await adminDb.collection('project-approve').doc(projectId).get();
 
     if (!projectSnap.exists) {
-      console.error("Project not found in project-approve");
-      throw error(404, "ไม่พบข้อมูลโครงงานที่ระบุ");
+      throw error(404, 'ไม่พบข้อมูลโครงงานที่ระบุ');
     }
 
     const project = projectSnap.data();
 
-    // Convert Firestore Timestamp to a serializable format (e.g., ISO string).
-    // SvelteKit cannot serialize Firestore Timestamp objects directly.
-    if (project.lastModified && typeof project.lastModified.toDate === 'function') {
-      project.lastModified = project.lastModified.toDate().toISOString();
-    }
-    if (project.createdAt && typeof project.createdAt.toDate === 'function') {
-      project.createdAt = project.createdAt.toDate().toISOString();
-    }
-    if (project.lastUpdated && typeof project.lastUpdated.toDate === 'function') {
-      project.lastUpdated = project.lastUpdated.toDate().toISOString();
-    }
+    // แปลง Timestamp เป็น ISO string
+    ['lastModified', 'createdAt', 'lastUpdated'].forEach(
+      (key) => (project[key] = toISOIfTimestamp(project[key]))
+    );
 
-    //console.log("Fetched project data:", {project, projectId, isNotFound: false}); // Log fetched project data for debugging
-    return {
-      project,
-      projectId,
-      isNotFound: false
-    };
-
+    return { project, projectId, isNotFound: false };
   } catch (err) {
-    console.error("Error fetching data:", err);
-    throw error(500, "เกิดข้อผิดพลาดในการดึงข้อมูล");
+    console.error('Error fetching project:', err);
+
+    // ถ้าเป็น error ของ SvelteKit ให้โยนต่อ
+    if (err?.status && err?.body) throw err;
+
+    throw error(500, 'เกิดข้อผิดพลาดในการดึงข้อมูล');
   }
 }
