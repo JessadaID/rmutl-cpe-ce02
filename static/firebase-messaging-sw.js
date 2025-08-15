@@ -11,12 +11,12 @@ import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 // พิจารณาวิธีอื่น เช่น การส่งค่าผ่าน Query Parameters ตอน register SW หรือใช้ Build Tool ช่วย
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_apiKey ,
-  authDomain: import.meta.env.VITE_authDomain,
-  projectId: import.meta.env.VITE_projectId,
-  storageBucket: import.meta.env.VITE_storageBucket,
-  messagingSenderId: import.meta.env.VITE_messagingSenderId,
-  appId: import.meta.env.VITE_appId,
+  apiKey: "AIzaSyBSL4HXr2IdQ_oSkMkcECF626HVfDzf52w",
+  authDomain: "cpe02-4b991.firebaseapp.com",
+  projectId: "cpe02-4b991",
+  storageBucket: "cpe02-4b991.firebasestorage.app",
+  messagingSenderId: "827303701453",
+  appId: "1:827303701453:web:3a98898fb3865832403284",
   //measurementId: import.meta.env.VITE_measurementId // Optional, but good to keep if defined
 };
 
